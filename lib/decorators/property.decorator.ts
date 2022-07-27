@@ -1,5 +1,5 @@
 import { ObjectId } from "mongodb";
-import { BsonType, JsonSchema, JsonSchemaArray } from "@mongoly/core";
+import { BsonType, JSONSchema, JSONSchemaArray } from "@mongoly/core";
 import { addPropertyMetadata } from "../storages/type-metadata.storage";
 
 export type PropertyOptions = {
@@ -7,7 +7,7 @@ export type PropertyOptions = {
   isNullable?: boolean;
   isIndexed?: boolean;
   isUnique?: boolean;
-  jsonSchema?: JsonSchema;
+  jsonSchema?: JSONSchema;
 };
 
 export type EnumPropertyOptions<TEnum = unknown> = {
@@ -16,8 +16,8 @@ export type EnumPropertyOptions<TEnum = unknown> = {
 } & Omit<PropertyOptions, "jsonSchema">;
 
 export type ArrayPropertyOptions = {
-  itemsJSONSchema: JsonSchema | JsonSchema[];
-  arrayJSONSchema?: Omit<JsonSchemaArray, "bsonType" | "items">;
+  itemsJSONSchema: JSONSchema | JSONSchema[];
+  arrayJSONSchema?: Omit<JSONSchemaArray, "bsonType" | "items">;
 } & Omit<PropertyOptions, "jsonSchema">;
 
 const DATA_TYPE_TO_BSON_TYPE = new Map<Function, BsonType>([
@@ -31,7 +31,7 @@ const DATA_TYPE_TO_BSON_TYPE = new Map<Function, BsonType>([
 
 const inspectBsonType = (
   propertyOptions: PropertyOptions,
-  jsonSchema: JsonSchema,
+  jsonSchema: JSONSchema,
   target: unknown,
   propertyKey: string
 ) => {
@@ -81,11 +81,11 @@ export const EnumProp =
     if (!values || typeof values !== "object")
       throw new Error(`@EnumProperty values must be an object or an array`);
     if (!(values instanceof Array)) values = Object.values(values);
-    const enumJsonSchema: JsonSchema = { enum: values as unknown[] };
-    if (propertyOptions.isNullable) enumJsonSchema.enum!.push(null);
-    const jsonSchema: JsonSchema = isArray
-      ? { bsonType: "array", items: enumJsonSchema }
-      : enumJsonSchema;
+    const enumJSONSchema: JSONSchema = { enum: values as unknown[] };
+    if (propertyOptions.isNullable) enumJSONSchema.enum!.push(null);
+    const jsonSchema: JSONSchema = isArray
+      ? { bsonType: "array", items: enumJSONSchema }
+      : enumJSONSchema;
     addPropertyMetadata((target as Object).constructor, {
       key: propertyKey,
       options: {
@@ -105,7 +105,7 @@ export const ArrayProp =
     } = arrayPropertyOptions;
     if (!target || typeof target !== "object")
       throw new Error(`@ArrayProperty must be used in a class`);
-    const jsonSchema: JsonSchemaArray = {
+    const jsonSchema: JSONSchemaArray = {
       ...arrayJSONSchema,
       bsonType: "array",
       items: itemsJSONSchema,

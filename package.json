@@ -24,7 +24,7 @@
     "release": "npm run build && release-it"
   },
   "devDependencies": {
-    "@mongoly/core": "^0.0.0",
+    "@mongoly/core": "^0.1.0",
     "@nestjs/common": "^9.0.5",
     "@nestjs/core": "^9.0.5",
     "@nestjs/testing": "^9.0.5",
@@ -42,7 +42,7 @@
     "vitest": "^0.19.1"
   },
   "peerDependencies": {
-    "@mongoly/core": "^0.0.0",
+    "@mongoly/core": "^0.1.0",
     "@nestjs/common": "^8.0.0 || ^9.0.0",
     "@nestjs/core": "^8.0.0 || ^9.0.0",
     "reflect-metadata": "^0.1.13",

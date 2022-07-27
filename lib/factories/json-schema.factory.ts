@@ -1,4 +1,4 @@
-import { JsonSchemaObject } from "@mongoly/core";
+import { JSONSchemaObject } from "@mongoly/core";
 import { flatten, Type } from "@nestjs/common";
 import type { PropertyMetadata } from "../types/property-metadata.type";
 import type { JSONSchemaMetadata } from "../types/json-schema-metadata.type";
@@ -8,7 +8,7 @@ import {
 } from "../storages/type-metadata.storage";
 
 const createJSONSchemaProperties = (
-  jsonSchema: JsonSchemaObject,
+  jsonSchema: JSONSchemaObject,
   propertiesMetadata: PropertyMetadata[]
 ) => {
   if (propertiesMetadata.length === 0) return;
@@ -27,8 +27,8 @@ const createJSONSchemaProperties = (
 };
 
 const mergeJSONSchemas = (
-  target: JsonSchemaObject,
-  source: JsonSchemaObject
+  target: JSONSchemaObject,
+  source: JSONSchemaObject
 ) => {
   if (source.required) {
     if (target.required) {
@@ -42,7 +42,7 @@ const mergeJSONSchemas = (
 };
 
 const transformJSONSchema = (
-  jsonSchema: JsonSchemaObject,
+  jsonSchema: JSONSchemaObject,
   metadataOptions: JSONSchemaMetadata["options"]
 ) => {
   if (metadataOptions.mergeWith) {
@@ -82,7 +82,7 @@ const transformJSONSchema = (
   }
 };
 
-const builtJSONSchemas = new WeakMap<Type<unknown>, JsonSchemaObject>();
+const builtJSONSchemas = new WeakMap<Type<unknown>, JSONSchemaObject>();
 
 export const createJSONSchemaForClass = <TClass>(target: Type<TClass>) => {
   if (builtJSONSchemas.has(target)) return builtJSONSchemas.get(target)!;
@@ -92,7 +92,7 @@ export const createJSONSchemaForClass = <TClass>(target: Type<TClass>) => {
     throw new Error(`No JSONSchema metadata found for class ${target.name}`);
   const metadataOptions = metadata.options;
 
-  const jsonSchema: JsonSchemaObject = { bsonType: "object" };
+  const jsonSchema: JSONSchemaObject = { bsonType: "object" };
 
   const propertiesMetadata = getPropertiesByTarget(target);
   createJSONSchemaProperties(jsonSchema, propertiesMetadata);

@@ -1,8 +1,8 @@
-import type { JsonSchemaObject } from "@mongoly/core";
+import type { JSONSchemaObject } from "@mongoly/core";
 import { addJSONSchemaMetadata } from "../storages/type-metadata.storage";
 
 export type JSONSchemaOptions = {
-  mergeWith?: JsonSchemaObject | JsonSchemaObject[];
+  mergeWith?: JSONSchemaObject | JSONSchemaObject[];
   omitProperties?: string[];
   pickProperties?: string[];
   renameProperties?: Record<string, string>;

@@ -1,6 +1,6 @@
 import type { FactoryProvider, ValueProvider } from "@nestjs/common";
 import { Logger } from "@nestjs/common";
-import type { JsonSchemaObject } from "@mongoly/core";
+import type { JSONSchemaObject } from "@mongoly/core";
 import { ensureJSONSchema, ensureIndexes } from "@mongoly/core";
 import type { IndexDescription } from "mongodb";
 import { MongoClient } from "mongodb";
@@ -28,7 +28,14 @@ export const createConnectionProvider = (name?: string): FactoryProvider => ({
   inject: [MODULE_OPTIONS_TOKEN],
 });
 
-const pluralize = (str: string) => (str.endsWith("s") ? str : `${str}s`);
+const pluralize = (str: string) => {
+  if (str.endsWith("s")) return str;
+  if (str.endsWith("y")) return `${str.slice(0, -1)}ies`;
+  if (str.endsWith("x")) return `${str}es`;
+  if (str.endsWith("ch")) return `${str}es`;
+  if (str.endsWith("sh")) return `${str}es`;
+  return `${str}s`;
+};
 
 const camelToSnakeCase = (str: string) =>
   str.replace(
@@ -40,7 +47,7 @@ export type CollectionProviderOptions = {
   name: string;
   dropOldIndexes?: boolean;
   indexes?: IndexDescription[];
-  schema?: JsonSchemaObject;
+  schema?: JSONSchemaObject;
 };
 
 export const createCollectionProvider = (
