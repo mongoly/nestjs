@@ -1,16 +1,14 @@
-# @mongoly/nest
+# @mongoly/nestjs
 The official nest module for mongoly
-
 ## Installation
 ```bash
 npm install mongodb @mongoly/core @mongoly/nestjs
 ```
-
 ## Usage
 ```ts
 // app.module.ts
 import { Module } from "@nestjs/common";
-import { ensureJSONSchema, ensureIndexes } from "@mongoly/core";
+import { ensureJSONSchema, ensureIndexes } from "@mongoly/nestjs";
 
 @Module({
   imports: [
@@ -25,7 +23,7 @@ export class AppModule {}
 ```ts
 // cats.module.ts
 import { Module } from "@nestjs/common";
-import { MongolyModule } from "@mongoly/nest";
+import { MongolyModule } from "@mongoly/nestjs";
 import { Cat, CatIndexes, CatSchema } from "./cats.entity";
 import { CatsService } from "./cats.service";
 
@@ -52,7 +50,7 @@ import {
   Prop,
   createJSONSchemaForClass,
   createIndexesForClass,
-} from "@mongoly/nest";
+} from "@mongoly/nestjs";
 
 @Schema()
 export class Cat {
@@ -72,7 +70,7 @@ export const CatIndexes = createIndexesForClass(Cat);
 ```ts
 // cats.service.ts
 import { Injectable } from "@nestjs/common";
-import { InjectCollection } from "@mongoly/nest";
+import { InjectCollection } from "@mongoly/nestjs";
 import type { Collection } from "mongodb";
 import { Cat } from "./cats.entity";
 
