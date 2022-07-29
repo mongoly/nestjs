@@ -8,6 +8,7 @@ export type PropertyOptions = {
   isIndexed?: boolean;
   isUnique?: boolean;
   jsonSchema?: JSONSchema;
+  type?: any;
 };
 
 export type EnumPropertyOptions<TEnum = unknown> = {

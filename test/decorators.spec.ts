@@ -112,4 +112,29 @@ describe("Indexes", () => {
       { key: { age: 1 } },
     ]);
   });
+
+  it("Should create nested indexes", () => {
+    @Schema()
+    class SubClass {
+      @Prop({ isIndexed: true })
+      name: string;
+    }
+
+    const SubClassSchema = createJSONSchemaForClass(SubClass);
+
+    @Schema()
+    class TestClass {
+      @Prop({ isIndexed: true, isUnique: true })
+      id: string;
+
+      @Prop({ type: SubClass, jsonSchema: SubClassSchema })
+      nameRef: SubClass;
+    }
+
+    const indexes = createIndexesForClass(TestClass);
+    expect(indexes).toEqual([
+      { key: { id: 1 }, unique: true },
+      { key: { "nameRef.name": 1 } },
+    ]);
+  });
 });
