@@ -1,6 +1,12 @@
-import type { PropertyOptions } from "../decorators/property.decorator";
+import { JSONSchema } from "@mongoly/core";
+import type {
+  PropertyOptions,
+  PropertyIndexOptions,
+} from "../decorators/property.decorator";
 
 export type PropertyMetadata = {
   key: string;
-  options: PropertyOptions;
+  jsonSchema: JSONSchema;
+  options?: PropertyOptions;
+  indexOptions?: PropertyIndexOptions;
 };

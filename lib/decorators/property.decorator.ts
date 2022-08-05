@@ -1,121 +1,149 @@
 import { ObjectId } from "mongodb";
-import { BsonType, JSONSchema, JSONSchemaArray } from "@mongoly/core";
+import type {
+  BsonType,
+  JSONSchema,
+  JSONSchemaArray,
+  JSONSchemaEnum,
+} from "@mongoly/core";
 import { addPropertyMetadata } from "../storages/type-metadata.storage";
 
-export type PropertyOptions = {
-  isRequired?: boolean;
-  isNullable?: boolean;
+export type PropertyIndexOptions = {
   isIndexed?: boolean;
+  isText?: boolean;
+  is2DSphere?: boolean;
+
   isUnique?: boolean;
-  jsonSchema?: JSONSchema;
-  type?: any;
+  isSparse?: boolean;
+  expireAfterSeconds?: number;
+
+  excludeIndexes?: boolean | string[];
 };
 
-export type EnumPropertyOptions<TEnum = unknown> = {
-  values: TEnum | TEnum[];
-  isArray?: boolean;
-} & Omit<PropertyOptions, "jsonSchema">;
-
-export type ArrayPropertyOptions = {
-  itemsJSONSchema: JSONSchema | JSONSchema[];
-  arrayJSONSchema?: Omit<JSONSchemaArray, "bsonType" | "items">;
-} & Omit<PropertyOptions, "jsonSchema">;
+export type PropertyOptions<TClass = any, TEnum = any> = {
+  isRequired?: boolean;
+  isNullable?: boolean;
+  description?: string;
+  enum?: TEnum | TEnum[];
+  classType?: TClass;
+  bsonType?: BsonType | BsonType[];
+  minLength?: number;
+  maxLength?: number;
+  min?: number;
+  max?: number;
+  minItems?: number;
+  maxItems?: number;
+};
 
 const DATA_TYPE_TO_BSON_TYPE = new Map<Function, BsonType>([
   [Number, "number"],
   [Boolean, "bool"],
   [String, "string"],
   [Date, "date"],
+  [Object, "object"],
   [ObjectId, "objectId"],
   [Buffer, "binData"],
 ]);
 
-const inspectBsonType = (
-  propertyOptions: PropertyOptions,
-  jsonSchema: JSONSchema,
+const getBsonType = (type: unknown) => {
+  if (typeof type !== "function")
+    throw new Error("Type must be a primitive function");
+  const bsonType = DATA_TYPE_TO_BSON_TYPE.get(type);
+  if (!bsonType) throw new Error(`Unsupported data type: ${type.toString()}`);
+  return bsonType;
+};
+
+const inspectType = (type: unknown): BsonType | BsonType[] => {
+  if (Array.isArray(type)) {
+    const bsonTypes = type.map(getBsonType);
+    return bsonTypes;
+  }
+  return getBsonType(type);
+};
+
+const isNumberBSONType = (bsonType: BsonType) =>
+  bsonType === "double" ||
+  bsonType === "int" ||
+  bsonType === "long" ||
+  bsonType === "decimal" ||
+  bsonType === "number";
+
+const createJSONSchemaForProperty = (
   target: unknown,
-  propertyKey: string
+  propertyKey: string,
+  propertyOptions?: PropertyOptions
 ) => {
   if (!target || typeof target !== "object")
     throw new Error(`@Property must be used in a class`);
-  if (!jsonSchema.bsonType) {
-    const dataType = Reflect.getMetadata("design:type", target, propertyKey);
-    const bsonType = DATA_TYPE_TO_BSON_TYPE.get(dataType);
-    if (!bsonType) {
-      const hostClass = (target as Object).constructor.name;
-      throw new Error(
-        `Unsupported data type at "${hostClass}.${propertyKey}", got: ${dataType}`
-      );
-    } else jsonSchema.bsonType = bsonType;
-  }
+  if (!propertyOptions) return {} as JSONSchema;
 
-  if (propertyOptions.isNullable) {
-    if (propertyOptions.isRequired)
-      throw new Error(
-        `@Property cannot be both nullable and required at property "${propertyKey}"`
-      );
-    if (!(jsonSchema.bsonType instanceof Array))
-      jsonSchema.bsonType = [jsonSchema.bsonType, "null"];
-    else {
-      if (!jsonSchema.bsonType.includes("null"))
-        jsonSchema.bsonType.push("null");
+  if (propertyOptions.isRequired && propertyOptions.isNullable)
+    throw new Error(`
+        Property "${propertyKey}" cannot be both nullable and required.`);
+
+  if (propertyOptions.enum) {
+    const designType = Reflect.getMetadata("design:type", target, propertyKey);
+    if (!Array.isArray(propertyOptions.enum))
+      propertyOptions.enum = Object.values(propertyOptions.enum);
+    if (propertyOptions.isNullable) propertyOptions.enum.push(null);
+    if (designType === Array) {
+      return {
+        bsonType: "array",
+        items: {
+          enum: propertyOptions.enum,
+        },
+      } as JSONSchemaArray;
+    } else {
+      return { enum: propertyOptions.enum } as JSONSchemaEnum;
     }
   }
+
+  let bsonType: BsonType | BsonType[] | undefined;
+  if (!propertyOptions.bsonType) {
+    // First, lets inspect the class type if it exists
+    if (propertyOptions.classType) {
+      bsonType = inspectType(propertyOptions.classType);
+      if (Array.isArray(bsonType)) {
+        if (propertyOptions.isNullable) bsonType.push("null");
+        return {
+          bsonType: "array",
+          items: {
+            bsonType,
+          },
+        };
+      }
+    } else {
+      // If that doesn't exist, lets inspect the type of the property
+      const designType = Reflect.getMetadata(
+        "design:type",
+        target,
+        propertyKey
+      );
+      bsonType = inspectType(designType);
+      if (Array.isArray(bsonType))
+        throw new Error("Expected a single BSON type");
+      if (propertyOptions.isNullable) bsonType = [bsonType, "null"];
+      return {};
+    }
+  }
+
+  return {};
 };
 
 export const Prop =
-  (propertyOptions: PropertyOptions = {}) =>
+  (
+    propertyOptions?: PropertyOptions,
+    propertyIndexOptions?: PropertyIndexOptions
+  ) =>
   (target: unknown, propertyKey: string) => {
-    propertyOptions.jsonSchema = propertyOptions.jsonSchema || {};
-    const jsonSchema = propertyOptions.jsonSchema;
-    inspectBsonType(propertyOptions, jsonSchema, target, propertyKey);
+    const jsonSchema = createJSONSchemaForProperty(
+      target,
+      propertyKey,
+      propertyOptions
+    );
     addPropertyMetadata((target as Object).constructor, {
+      jsonSchema,
       key: propertyKey,
       options: propertyOptions,
-    });
-  };
-
-export const EnumProp =
-  (enumPropertyOptions: EnumPropertyOptions) =>
-  (target: unknown, propertyKey: string) => {
-    let { values, isArray, ...propertyOptions } = enumPropertyOptions;
-    if (!values || typeof values !== "object")
-      throw new Error(`@EnumProperty values must be an object or an array`);
-    if (!(values instanceof Array)) values = Object.values(values);
-    const enumJSONSchema: JSONSchema = { enum: values as unknown[] };
-    if (propertyOptions.isNullable) enumJSONSchema.enum!.push(null);
-    const jsonSchema: JSONSchema = isArray
-      ? { bsonType: "array", items: enumJSONSchema }
-      : enumJSONSchema;
-    addPropertyMetadata((target as Object).constructor, {
-      key: propertyKey,
-      options: {
-        ...propertyOptions,
-        jsonSchema,
-      },
-    });
-  };
-
-export const ArrayProp =
-  (arrayPropertyOptions: ArrayPropertyOptions) =>
-  (target: unknown, propertyKey: string) => {
-    const {
-      itemsJSONSchema,
-      arrayJSONSchema = {},
-      ...propertyOptions
-    } = arrayPropertyOptions;
-    if (!target || typeof target !== "object")
-      throw new Error(`@ArrayProperty must be used in a class`);
-    const jsonSchema: JSONSchemaArray = {
-      ...arrayJSONSchema,
-      bsonType: "array",
-      items: itemsJSONSchema,
-    };
-    addPropertyMetadata(target.constructor, {
-      key: propertyKey,
-      options: {
-        ...propertyOptions,
-        jsonSchema,
-      },
+      indexOptions: propertyIndexOptions,
     });
   };
