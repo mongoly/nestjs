@@ -2,8 +2,6 @@ import "reflect-metadata";
 import { describe, it, expect } from "vitest";
 import {
   Prop,
-  EnumProp,
-  ArrayProp,
   Schema,
   createJSONSchemaForClass,
   createIndexesForClass,
@@ -13,7 +11,7 @@ describe("Schemas", () => {
   it("Should create a basic schema", () => {
     @Schema()
     class TestClass {
-      @Prop({ isRequired: true, isIndexed: true })
+      @Prop({ isRequired: true })
       name: string;
 
       @Prop({ isNullable: true })
@@ -40,7 +38,6 @@ describe("Schemas", () => {
       @Prop()
       name: string;
     }
-
     const friendJSONSchema = createJSONSchemaForClass(FriendClass);
     expect(friendJSONSchema).toEqual({
       bsonType: "object",
@@ -51,35 +48,38 @@ describe("Schemas", () => {
 
     @Schema()
     class TestClass {
-      @Prop({ isRequired: true, isIndexed: true, isUnique: true })
+      @Prop({ isRequired: true, schema: { minLength: 2 } })
       name: string;
 
-      @Prop({ isRequired: true, isIndexed: true })
+      @Prop({ isRequired: true })
       email: string;
 
-      @Prop({ isNullable: true })
+      @Prop({ isNullable: true, schema: { minimum: 16 } })
       age: number;
 
-      @EnumProp({ values: Gender })
+      @Prop({ enum: Gender })
       gender: Gender;
 
-      @Prop({ jsonSchema: friendJSONSchema, isNullable: true })
+      @Prop({ type: FriendClass, isClass: true, isNullable: true })
       bestFriend?: FriendClass;
 
-      @ArrayProp({
-        itemsJSONSchema: friendJSONSchema,
-        arrayJSONSchema: { maxItems: 2 },
+      @Prop({
+        type: FriendClass,
+        isClass: true,
+        isArray: true,
+        schema: { minItems: 2, maxItems: 5 },
       })
       friends: FriendClass[];
     }
 
     const jsonSchema = createJSONSchemaForClass(TestClass);
+    console.dir(jsonSchema, { depth: null });
     expect(jsonSchema).toEqual({
       bsonType: "object",
       properties: {
-        name: { bsonType: "string" },
+        name: { bsonType: "string", minLength: 2 },
         email: { bsonType: "string" },
-        age: { bsonType: ["number", "null"] },
+        age: { bsonType: ["number", "null"], minimum: 16 },
         gender: { enum: ["M", "F", 0, 1] },
         bestFriend: {
           ...friendJSONSchema,
@@ -88,7 +88,8 @@ describe("Schemas", () => {
         friends: {
           bsonType: "array",
           items: friendJSONSchema,
-          maxItems: 2,
+          minItems: 2,
+          maxItems: 5,
         },
       },
       required: ["name", "email"],
@@ -100,7 +101,7 @@ describe("Indexes", () => {
   it("Should create valid indexes", () => {
     @Schema()
     class TestClass {
-      @Prop({ isIndexed: true, isUnique: true })
+      @Prop({ index: { isUnique: true } })
       name: string;
 
       @Prop({ isIndexed: true })
@@ -118,17 +119,23 @@ describe("Indexes", () => {
     class SubClass {
       @Prop({ isIndexed: true })
       name: string;
+
+      @Prop({ isIndexed: true, excludeFromIndexes: true })
+      age: number;
     }
 
-    const SubClassSchema = createJSONSchemaForClass(SubClass);
+    createJSONSchemaForClass(SubClass);
 
     @Schema()
     class TestClass {
-      @Prop({ isIndexed: true, isUnique: true })
+      @Prop({ index: { isUnique: true } })
       id: string;
 
-      @Prop({ type: SubClass, jsonSchema: SubClassSchema })
+      @Prop({ type: SubClass, isClass: true })
       nameRef: SubClass;
+
+      @Prop({ type: SubClass, isClass: true, excludeSubIndexes: true })
+      nameRefWithoutIndex: SubClass;
     }
 
     const indexes = createIndexesForClass(TestClass);

@@ -6,7 +6,7 @@ const propertyMetadata = new WeakMap<Function, PropertyMetadata[]>();
 
 export const addPropertyMetadata = (
   target: Function,
-  metadata: PropertyMetadata
+  metadata: PropertyMetadata,
 ) => {
   const properties = propertyMetadata.get(target) || [];
   properties.push(metadata);
@@ -21,5 +21,5 @@ export const getPropertiesByTarget = (target: Function) =>
 
 export const addJSONSchemaMetadata = (
   target: Function,
-  metadata: JSONSchemaMetadata
+  metadata: JSONSchemaMetadata,
 ) => jsonSchemaMetadata.set(target, metadata);

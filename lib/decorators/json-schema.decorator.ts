@@ -14,7 +14,6 @@ export const Schema =
     if (!target || typeof target !== "function")
       throw new Error(`@Schema must be used on a class`);
     addJSONSchemaMetadata(target, {
-      target,
       options: jsonSchemaOptions,
     });
   };

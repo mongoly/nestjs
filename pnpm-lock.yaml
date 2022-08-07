@@ -1,7 +1,7 @@
 lockfileVersion: 5.4
 
 specifiers:
-  '@mongoly/core': ^0.1.4
+  '@mongoly/core': ^0.1.8
   '@nestjs/common': ^9.0.5
   '@nestjs/core': ^9.0.5
   '@nestjs/testing': ^9.0.5
@@ -19,7 +19,7 @@ specifiers:
   vitest: ^0.19.1
 
 dependencies:
-  '@mongoly/core': 0.1.4_mongodb@4.8.0
+  '@mongoly/core': 0.1.8_mongodb@4.8.0
 
 devDependencies:
   '@nestjs/common': 9.0.5_j5hagqx4mwzscud4kyjdvubauy
@@ -88,8 +88,8 @@ packages:
       '@jridgewell/sourcemap-codec': 1.4.14
     dev: true
 
-  /@mongoly/core/0.1.4_mongodb@4.8.0:
-    resolution: {integrity: sha512-AMb3PPlgNAOQkBtVSjseJv7WfTpROYDxRrPd7UcmkoiWWaWgghdgqtXMQfhxDT+7ON5xa3V1jbyy//YL0c9YWQ==}
+  /@mongoly/core/0.1.8_mongodb@4.8.0:
+    resolution: {integrity: sha512-z/SmiZOfEYCXlzALra8lVM4It09idR3Yhl77Az5HdMctekLtovsFe4tWnHanW/cJDH2fq0Fjc92ZFH/5dWtN3g==}
     peerDependencies:
       mongodb: ^4.8.0
     dependencies:

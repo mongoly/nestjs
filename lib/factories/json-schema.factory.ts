@@ -6,6 +6,11 @@ import {
   getJSONSchemaMetadataByTarget,
   getPropertiesByTarget,
 } from "../storages/type-metadata.storage";
+import {
+  hasJSONSchema,
+  getJSONSchema,
+  setJSONSchema,
+} from "../storages/json-schema.storage";
 
 const createJSONSchemaProperties = (
   jsonSchema: JSONSchemaObject,
@@ -82,10 +87,8 @@ const transformJSONSchema = (
   }
 };
 
-const builtJSONSchemas = new WeakMap<Type, JSONSchemaObject>();
-
 export const createJSONSchemaForClass = <TClass>(target: Type<TClass>) => {
-  if (builtJSONSchemas.has(target)) return builtJSONSchemas.get(target)!;
+  if (hasJSONSchema(target)) return getJSONSchema(target);
 
   const metadata = getJSONSchemaMetadataByTarget(target);
   if (!metadata)
@@ -98,7 +101,7 @@ export const createJSONSchemaForClass = <TClass>(target: Type<TClass>) => {
   createJSONSchemaProperties(jsonSchema, propertiesMetadata);
   transformJSONSchema(jsonSchema, metadataOptions);
 
-  builtJSONSchemas.set(target, jsonSchema);
+  setJSONSchema(target, jsonSchema);
 
   return jsonSchema;
 };

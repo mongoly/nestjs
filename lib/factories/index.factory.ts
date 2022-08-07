@@ -7,11 +7,9 @@ export const createIndex = (
   index: 1 | -1 | "text" | "2dsphere",
   isUnique?: boolean,
   isSparse?: boolean,
-  keyPrefix?: string,
 ) => {
-  const finalKey = keyPrefix ? `${keyPrefix}.${key}` : key;
   const description: IndexDescription = {
-    key: { [finalKey]: index },
+    key: { [key]: index },
   };
   if (isUnique) description.unique = true;
   if (isSparse) description.sparse = true;
@@ -20,34 +18,37 @@ export const createIndex = (
 
 export const createIndexesForClass = <TClass>(
   target: Type<TClass>,
-  keyPrefix?: string,
+  parentKey?: string,
 ) => {
   const indexes: IndexDescription[] = [];
   const propertiesMetadata = getPropertiesByTarget(target);
   for (const propertyMetadata of propertiesMetadata) {
-    const { jsonSchema, options = {}, indexOptions = {} } = propertyMetadata;
-    // @ts-ignore
-    const isObject = jsonSchema.bsonType === "object";
-    if (indexOptions.isIndexed && !isObject) continue;
-    if (indexOptions.isIndexed)
+    const { options } = propertyMetadata;
+    if (!options) continue;
+    const isIndexed = options.isIndexed || options.index !== undefined;
+    if (parentKey && isIndexed && options.excludeFromIndexes) continue;
+    const key = parentKey
+      ? `${parentKey}.${propertyMetadata.key}`
+      : propertyMetadata.key;
+    if (isIndexed) {
       indexes.push(
-        createIndex(
-          propertyMetadata.key,
-          indexOptions.is2DSphere
-            ? "2dsphere"
-            : indexOptions.isText
-            ? "text"
-            : 1,
-          indexOptions.isUnique,
-          indexOptions.isSparse,
-          keyPrefix,
-        ),
+        !options.index
+          ? createIndex(key, 1)
+          : createIndex(
+              key,
+              options.index.is2DSphere
+                ? "2dsphere"
+                : options.index.isText
+                ? "text"
+                : options.index.indexDirection || 1,
+              options.index.isUnique,
+              options.index.isSparse,
+            ),
       );
-    if (isObject && !indexOptions.excludeIndexes && options.type) {
-      const subIndexes = createIndexesForClass(
-        options.type,
-        propertyMetadata.key,
-      );
+    }
+    if (options.isClass && !options.excludeSubIndexes) {
+      if (!options.type) throw new Error(`Property "${key}" has no type`);
+      const subIndexes = createIndexesForClass(options.type, key);
       indexes.push(...subIndexes);
     }
   }
