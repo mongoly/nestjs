@@ -21,8 +21,9 @@
   "scripts": {
     "test:app": "vitest app",
     "test:decorators": "vitest decorators",
+    "test": "vitest --run",
     "build": "rimraf dist && tsc -p tsconfig.build.json",
-    "release": "npm run test:decorators && npm run test:app && npm run build && release-it"
+    "release": "npm run test && npm run build && release-it"
   },
   "dependencies": {
     "@mongoly/core": "^0.1.8"

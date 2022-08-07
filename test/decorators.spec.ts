@@ -73,7 +73,6 @@ describe("Schemas", () => {
     }
 
     const jsonSchema = createJSONSchemaForClass(TestClass);
-    console.dir(jsonSchema, { depth: null });
     expect(jsonSchema).toEqual({
       bsonType: "object",
       properties: {
