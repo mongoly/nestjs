@@ -1,4 +1,4 @@
-import type { JSONSchemaOptions } from "../decorators/json-schema.decorator";
+import type { JSONSchemaOptions } from "./json-schema-options.type";
 
 export type JSONSchemaMetadata = {
   target: Function;

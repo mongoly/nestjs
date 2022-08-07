@@ -9,26 +9,26 @@ import {
 
 const createJSONSchemaProperties = (
   jsonSchema: JSONSchemaObject,
-  propertiesMetadata: PropertyMetadata[]
+  propertiesMetadata: PropertyMetadata[],
 ) => {
   if (propertiesMetadata.length === 0) return;
   jsonSchema.properties = {};
   for (const propertyMetadata of propertiesMetadata) {
-    const { key, options } = propertyMetadata;
-    if (!options.jsonSchema) {
+    const { key, jsonSchema: propJSONSchema, options = {} } = propertyMetadata;
+    if (!propJSONSchema) {
       throw new Error(`Property ${key} has no JSON schema`);
     }
     if (options.isRequired) {
       if (!jsonSchema.required) jsonSchema.required = [];
       jsonSchema.required.push(key);
     }
-    jsonSchema.properties[key] = options.jsonSchema;
+    jsonSchema.properties[key] = propJSONSchema;
   }
 };
 
 const mergeJSONSchemas = (
   target: JSONSchemaObject,
-  source: JSONSchemaObject
+  source: JSONSchemaObject,
 ) => {
   if (source.required) {
     if (target.required) {
@@ -43,7 +43,7 @@ const mergeJSONSchemas = (
 
 const transformJSONSchema = (
   jsonSchema: JSONSchemaObject,
-  metadataOptions: JSONSchemaMetadata["options"]
+  metadataOptions: JSONSchemaMetadata["options"],
 ) => {
   if (metadataOptions.mergeWith) {
     if (metadataOptions.mergeWith instanceof Array) {
@@ -54,7 +54,7 @@ const transformJSONSchema = (
   if (jsonSchema.properties) {
     if (metadataOptions.omitProperties && metadataOptions.pickProperties) {
       throw new Error(
-        `Cannot use both "omitProperties" and "pickProperties" options`
+        `Cannot use both "omitProperties" and "pickProperties" options`,
       );
     }
     if (metadataOptions.omitProperties) {
@@ -64,14 +64,14 @@ const transformJSONSchema = (
     if (metadataOptions.pickProperties) {
       const propertiesToPick = metadataOptions.pickProperties;
       const propertiesToOmit = Object.keys(jsonSchema.properties).filter(
-        (property) => !propertiesToPick.includes(property)
+        (property) => !propertiesToPick.includes(property),
       );
       for (const property of propertiesToOmit)
         delete jsonSchema.properties[property];
     }
     if (metadataOptions.renameProperties) {
       for (const [oldName, newName] of Object.entries(
-        metadataOptions.renameProperties
+        metadataOptions.renameProperties,
       )) {
         if (jsonSchema.properties[oldName]) {
           jsonSchema.properties[newName] = jsonSchema.properties[oldName]!;
@@ -82,7 +82,7 @@ const transformJSONSchema = (
   }
 };
 
-const builtJSONSchemas = new WeakMap<Type<unknown>, JSONSchemaObject>();
+const builtJSONSchemas = new WeakMap<Type, JSONSchemaObject>();
 
 export const createJSONSchemaForClass = <TClass>(target: Type<TClass>) => {
   if (builtJSONSchemas.has(target)) return builtJSONSchemas.get(target)!;

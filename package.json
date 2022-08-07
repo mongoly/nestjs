@@ -24,7 +24,7 @@
     "release": "npm run build && release-it"
   },
   "dependencies": {
-    "@mongoly/core": "^0.1.3"
+    "@mongoly/core": "^0.1.4"
   },
   "devDependencies": {
     "@nestjs/common": "^9.0.5",
