@@ -18,6 +18,44 @@ const DATA_TYPE_TO_BSON_TYPE = new Map<Type, BSONType>([
   [ObjectId, "objectId"],
 ]);
 
+const getArrayKeywords = (propertyOptions: PropertyOptions): ArrayKeywords => {
+  const arrayProps: ArrayKeywords = {};
+  if (propertyOptions.schema) {
+    if (propertyOptions.schema.minItems)
+      arrayProps.minItems = propertyOptions.schema.minItems;
+    if (propertyOptions.schema.maxItems)
+      arrayProps.maxItems = propertyOptions.schema.maxItems;
+    if (propertyOptions.schema.uniqueItems)
+      arrayProps.uniqueItems = propertyOptions.schema.uniqueItems;
+  }
+  return arrayProps;
+};
+
+const getScalarKeywords = (
+  propertyOptions: PropertyOptions,
+): ScalarKeywords => {
+  const scalarProps: ScalarKeywords = {};
+  if (propertyOptions.schema) {
+    if (propertyOptions.schema.minimum)
+      scalarProps.minimum = propertyOptions.schema.minimum;
+    if (propertyOptions.schema.maximum)
+      scalarProps.maximum = propertyOptions.schema.maximum;
+    if (propertyOptions.schema.exclusiveMinimum)
+      scalarProps.exclusiveMinimum = propertyOptions.schema.exclusiveMinimum;
+    if (propertyOptions.schema.exclusiveMaximum)
+      scalarProps.exclusiveMaximum = propertyOptions.schema.exclusiveMaximum;
+    if (propertyOptions.schema.multipleOf)
+      scalarProps.multipleOf = propertyOptions.schema.multipleOf;
+    if (propertyOptions.schema.minLength)
+      scalarProps.minLength = propertyOptions.schema.minLength;
+    if (propertyOptions.schema.maxLength)
+      scalarProps.maxLength = propertyOptions.schema.maxLength;
+    if (propertyOptions.schema.pattern)
+      scalarProps.pattern = propertyOptions.schema.pattern;
+  }
+  return scalarProps;
+};
+
 const createJSONSchemaForProperty = (
   target: unknown,
   propertyKey: string,
@@ -29,36 +67,11 @@ const createJSONSchemaForProperty = (
   const className = target.constructor.name;
   const propertyPath = `${className}.${propertyKey}`;
 
-  const arrayProps: ArrayKeywords = {};
-  const scalarProps: ScalarKeywords = {};
+  const arrayProps = getArrayKeywords(propertyOptions);
+  const scalarProps = getScalarKeywords(propertyOptions);
 
-  if (propertyOptions.schema) {
-    if (propertyOptions.isArray) {
-      if (propertyOptions.schema.minItems)
-        arrayProps.minItems = propertyOptions.schema.minItems;
-      if (propertyOptions.schema.maxItems)
-        arrayProps.maxItems = propertyOptions.schema.maxItems;
-      if (propertyOptions.schema.uniqueItems)
-        arrayProps.uniqueItems = propertyOptions.schema.uniqueItems;
-    } else {
-      if (propertyOptions.schema.minimum)
-        scalarProps.minimum = propertyOptions.schema.minimum;
-      if (propertyOptions.schema.maximum)
-        scalarProps.maximum = propertyOptions.schema.maximum;
-      if (propertyOptions.schema.exclusiveMinimum)
-        scalarProps.exclusiveMinimum = propertyOptions.schema.exclusiveMinimum;
-      if (propertyOptions.schema.exclusiveMaximum)
-        scalarProps.exclusiveMaximum = propertyOptions.schema.exclusiveMaximum;
-      if (propertyOptions.schema.multipleOf)
-        scalarProps.multipleOf = propertyOptions.schema.multipleOf;
-      if (propertyOptions.schema.minLength)
-        scalarProps.minLength = propertyOptions.schema.minLength;
-      if (propertyOptions.schema.maxLength)
-        scalarProps.maxLength = propertyOptions.schema.maxLength;
-      if (propertyOptions.schema.pattern)
-        scalarProps.pattern = propertyOptions.schema.pattern;
-    }
-  }
+  const designType = Reflect.getMetadata("design:type", target, propertyKey);
+  if (!propertyOptions.isArray) propertyOptions.isArray = designType === Array;
 
   if (propertyOptions.enum) {
     if (typeof propertyOptions.enum !== "object")
@@ -93,12 +106,9 @@ const createJSONSchemaForProperty = (
         };
   }
 
-  let targetType =
-    propertyOptions.type ||
-    Reflect.getMetadata("design:type", target, propertyKey);
+  let targetType = propertyOptions.type || designType;
   let bsonType = DATA_TYPE_TO_BSON_TYPE.get(targetType);
   if (!bsonType) throw new Error(`Unable to determine type at ${propertyPath}`);
-
   return propertyOptions.isArray
     ? {
         bsonType: propertyOptions.isNullable ? ["array", "null"] : "array",
@@ -112,14 +122,37 @@ const createJSONSchemaForProperty = (
 };
 
 export const RawProp =
-  (jsonSchema: JSONSchema | JSONSchema[], propertyOptions?: PropertyOptions) =>
+  (
+    jsonSchema: JSONSchema | JSONSchema[],
+    propertyOptions: PropertyOptions = {},
+  ) =>
   (target: unknown, propertyKey: string) => {
-    if (jsonSchema instanceof Array) {
+    if (propertyOptions.isClass)
+      throw new Error("@RawProp does not support `isClass`");
+    if (jsonSchema instanceof Array || propertyOptions.isArray) {
+      const arrayKeywords = getArrayKeywords(propertyOptions);
       jsonSchema = {
-        bsonType: "array",
+        bsonType: propertyOptions.isNullable ? ["array", "null"] : "array",
         items: jsonSchema,
+        ...arrayKeywords,
       };
+    } else {
+      if (propertyOptions.schema)
+        throw new Error(
+          "@RawProp does not support schema for non-array properties",
+        );
+      const typeKeyword = jsonSchema.type ? "type" : "bsonType";
+      if (!jsonSchema[typeKeyword])
+        throw new Error("JSON schema missing `type` or `bsonType`");
+      if (propertyOptions.isNullable) {
+        if (jsonSchema[typeKeyword] instanceof Array) {
+          (jsonSchema[typeKeyword] as any[]).push("null");
+        } else {
+          jsonSchema.bsonType = [jsonSchema.bsonType as any, "null"];
+        }
+      }
     }
+
     addPropertyMetadata((target as Object).constructor, {
       jsonSchema,
       key: propertyKey,
