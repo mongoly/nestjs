@@ -1,6 +1,6 @@
 {
   "name": "@mongoly/nestjs",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "author": "mongoly",
   "description": "A Nestjs module for mongoly",
   "repository": "git://github.com/mongoly/nestjs.git",
