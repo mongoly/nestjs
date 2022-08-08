@@ -48,7 +48,7 @@ export const createIndexesForClass = <TClass>(
     }
     if (options.isClass && !options.excludeSubIndexes) {
       if (!options.type) throw new Error(`Property "${key}" has no type`);
-      const subIndexes = createIndexesForClass(options.type, key);
+      const subIndexes = createIndexesForClass(options.type as Type, key);
       indexes.push(...subIndexes);
     }
   }
