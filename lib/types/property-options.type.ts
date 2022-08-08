@@ -32,7 +32,7 @@ export type PropertyOptions = {
   isIndexed?: boolean;
   excludeSubIndexes?: boolean;
   excludeFromIndexes?: boolean;
-  type?: Type;
+  type?: Type | [Type];
   enum?: any | any[];
   index?: PropertyIndexOptions;
   schema?: PropertySchemaOptions;

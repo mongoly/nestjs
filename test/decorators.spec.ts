@@ -60,16 +60,20 @@ describe("Schemas", () => {
       @Prop({ enum: Gender })
       gender: Gender;
 
-      @Prop({ type: FriendClass, isClass: true, isNullable: true })
+      @Prop({ isNullable: true })
       bestFriend?: FriendClass;
 
       @Prop({
-        type: FriendClass,
-        isClass: true,
-        isArray: true,
+        type: [FriendClass],
         schema: { minItems: 2, maxItems: 5 },
       })
       friends: FriendClass[];
+
+      @Prop({
+        type: [Number],
+        schema: { minItems: 1, minimum: 0 },
+      })
+      numbers: number[];
     }
 
     const jsonSchema = createJSONSchemaForClass(TestClass);
@@ -89,6 +93,11 @@ describe("Schemas", () => {
           items: friendJSONSchema,
           minItems: 2,
           maxItems: 5,
+        },
+        numbers: {
+          bsonType: "array",
+          items: { bsonType: "number", minimum: 0 },
+          minItems: 1,
         },
       },
       required: ["name", "email"],

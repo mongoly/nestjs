@@ -18,14 +18,21 @@ const DATA_TYPE_TO_BSON_TYPE = new Map<Type, BSONType>([
   [ObjectId, "objectId"],
 ]);
 
+const isSupported = (target: Type): boolean =>
+  DATA_TYPE_TO_BSON_TYPE.has(target);
+
+const isClass = (target: unknown): target is Type => {
+  return typeof target === "function";
+};
+
 const getArrayKeywords = (propertyOptions: PropertyOptions): ArrayKeywords => {
   const arrayProps: ArrayKeywords = {};
   if (propertyOptions.schema) {
-    if (propertyOptions.schema.minItems)
+    if (propertyOptions.schema.minItems !== undefined)
       arrayProps.minItems = propertyOptions.schema.minItems;
-    if (propertyOptions.schema.maxItems)
+    if (propertyOptions.schema.maxItems !== undefined)
       arrayProps.maxItems = propertyOptions.schema.maxItems;
-    if (propertyOptions.schema.uniqueItems)
+    if (propertyOptions.schema.uniqueItems !== undefined)
       arrayProps.uniqueItems = propertyOptions.schema.uniqueItems;
   }
   return arrayProps;
@@ -36,21 +43,21 @@ const getScalarKeywords = (
 ): ScalarKeywords => {
   const scalarProps: ScalarKeywords = {};
   if (propertyOptions.schema) {
-    if (propertyOptions.schema.minimum)
+    if (propertyOptions.schema.minimum !== undefined)
       scalarProps.minimum = propertyOptions.schema.minimum;
-    if (propertyOptions.schema.maximum)
+    if (propertyOptions.schema.maximum !== undefined)
       scalarProps.maximum = propertyOptions.schema.maximum;
-    if (propertyOptions.schema.exclusiveMinimum)
+    if (propertyOptions.schema.exclusiveMinimum !== undefined)
       scalarProps.exclusiveMinimum = propertyOptions.schema.exclusiveMinimum;
-    if (propertyOptions.schema.exclusiveMaximum)
+    if (propertyOptions.schema.exclusiveMaximum !== undefined)
       scalarProps.exclusiveMaximum = propertyOptions.schema.exclusiveMaximum;
-    if (propertyOptions.schema.multipleOf)
+    if (propertyOptions.schema.multipleOf !== undefined)
       scalarProps.multipleOf = propertyOptions.schema.multipleOf;
-    if (propertyOptions.schema.minLength)
+    if (propertyOptions.schema.minLength !== undefined)
       scalarProps.minLength = propertyOptions.schema.minLength;
-    if (propertyOptions.schema.maxLength)
+    if (propertyOptions.schema.maxLength !== undefined)
       scalarProps.maxLength = propertyOptions.schema.maxLength;
-    if (propertyOptions.schema.pattern)
+    if (propertyOptions.schema.pattern !== undefined)
       scalarProps.pattern = propertyOptions.schema.pattern;
   }
   return scalarProps;
@@ -71,7 +78,13 @@ const createJSONSchemaForProperty = (
   const scalarProps = getScalarKeywords(propertyOptions);
 
   const designType = Reflect.getMetadata("design:type", target, propertyKey);
+
+  // Don't have to set `isArray` here b/c it will bet set in few lines below
+  if (propertyOptions.type && propertyOptions.type instanceof Array)
+    propertyOptions.type = propertyOptions.type[0];
+  if (!propertyOptions.type) propertyOptions.type = designType as Type;
   if (!propertyOptions.isArray) propertyOptions.isArray = designType === Array;
+  // At this point, `type` and `isArray` should be set correctly.
 
   if (propertyOptions.enum) {
     if (typeof propertyOptions.enum !== "object")
@@ -88,11 +101,18 @@ const createJSONSchemaForProperty = (
       : { enum: propertyOptions.enum };
   }
 
-  if (propertyOptions.type && propertyOptions.isClass) {
+  // Now ensure that `isClass` is properly inferred
+  if (
+    !propertyOptions.isClass &&
+    !isSupported(propertyOptions.type) &&
+    isClass(propertyOptions.type)
+  )
+    propertyOptions.isClass = true;
+  if (propertyOptions.isClass) {
     let jsonSchema = getJSONSchema(propertyOptions.type);
     if (!jsonSchema)
       throw new Error(
-        `Could not find JSON schema for ${propertyOptions.type.name} at ${propertyPath}`,
+        `Could not find JSON schema for class ${propertyOptions.type.name} at ${propertyPath}`,
       );
     return propertyOptions.isArray
       ? {
@@ -106,13 +126,12 @@ const createJSONSchemaForProperty = (
         };
   }
 
-  let targetType = propertyOptions.type || designType;
-  let bsonType = DATA_TYPE_TO_BSON_TYPE.get(targetType);
+  let bsonType = DATA_TYPE_TO_BSON_TYPE.get(propertyOptions.type);
   if (!bsonType) throw new Error(`Unable to determine type at ${propertyPath}`);
   return propertyOptions.isArray
     ? {
         bsonType: propertyOptions.isNullable ? ["array", "null"] : "array",
-        items: { bsonType },
+        items: { bsonType, ...scalarProps },
         ...arrayProps,
       }
     : {
