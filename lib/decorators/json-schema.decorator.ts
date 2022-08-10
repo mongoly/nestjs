@@ -1,19 +1,18 @@
-import type { JSONSchemaObject } from "@mongoly/core";
+import type { JSONSchemaOptions } from "../types/json-schema-options.type";
 import { addJSONSchemaMetadata } from "../storages/type-metadata.storage";
 
-export type JSONSchemaOptions = {
-  mergeWith?: JSONSchemaObject | JSONSchemaObject[];
-  omitProperties?: string[];
-  pickProperties?: string[];
-  renameProperties?: Record<string, string>;
-};
+const isClassExtended = (target: Function) =>
+  target.toString().includes("extends");
 
 export const Schema =
-  (jsonSchemaOptions: JSONSchemaOptions = {}) =>
+  (schemaOptions: JSONSchemaOptions = {}) =>
   (target: unknown) => {
     if (!target || typeof target !== "function")
       throw new Error(`@Schema must be used on a class`);
-    addJSONSchemaMetadata(target, {
-      options: jsonSchemaOptions,
-    });
+    if (!schemaOptions.noInferExtends && isClassExtended(target)) {
+      const extendsClass = Object.getPrototypeOf(target);
+      if (extendsClass && extendsClass.constructor)
+        schemaOptions.extends = extendsClass;
+    }
+    addJSONSchemaMetadata(target, { options: schemaOptions });
   };

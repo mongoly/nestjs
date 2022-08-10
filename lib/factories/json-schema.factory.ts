@@ -50,11 +50,13 @@ const transformJSONSchema = (
   jsonSchema: JSONSchemaObject,
   metadataOptions: JSONSchemaMetadata["options"],
 ) => {
-  if (metadataOptions.mergeWith) {
-    if (metadataOptions.mergeWith instanceof Array) {
-      for (const mergeWith of metadataOptions.mergeWith)
-        mergeJSONSchemas(jsonSchema, mergeWith);
-    } else mergeJSONSchemas(jsonSchema, metadataOptions.mergeWith);
+  if (metadataOptions.extends) {
+    const extendsJSONSchema = createJSONSchemaForClass(metadataOptions.extends);
+    if (!extendsJSONSchema)
+      throw new Error(
+        `JSON schema for class "${metadataOptions.extends.name}" not found`,
+      );
+    mergeJSONSchemas(jsonSchema, extendsJSONSchema);
   }
   if (jsonSchema.properties) {
     if (metadataOptions.omitProperties && metadataOptions.pickProperties) {
@@ -94,7 +96,7 @@ export const createJSONSchemaForClass = <TClass>(
   if (hasJSONSchema(target)) return getJSONSchema(target)!;
   const metadata = getJSONSchemaMetadataByTarget(target);
   if (!metadata)
-    throw new Error(`No JSONSchema metadata found for class ${target.name}`);
+    throw new Error(`No JSON schema metadata found for class "${target.name}"`);
   const metadataOptions = metadata.options;
 
   const jsonSchema: JSONSchemaObject = { bsonType: "object" };

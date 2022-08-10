@@ -21,9 +21,8 @@ const DATA_TYPE_TO_BSON_TYPE = new Map<Type, BSONType>([
 const isSupported = (target: Type): boolean =>
   DATA_TYPE_TO_BSON_TYPE.has(target);
 
-const isClass = (target: unknown): target is Type => {
-  return typeof target === "function";
-};
+const isClass = (target: unknown): target is Type =>
+  typeof target === "function";
 
 const getArrayKeywords = (propertyOptions: PropertyOptions): ArrayKeywords => {
   const arrayProps: ArrayKeywords = {};

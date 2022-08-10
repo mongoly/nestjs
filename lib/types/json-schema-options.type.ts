@@ -1,7 +1,8 @@
-import type { JSONSchemaObject } from "@mongoly/core";
+import { Type } from "@nestjs/common";
 
 export type JSONSchemaOptions = {
-  mergeWith?: JSONSchemaObject | JSONSchemaObject[];
+  extends?: Type;
+  noInferExtends?: boolean;
   omitProperties?: string[];
   pickProperties?: string[];
   renameProperties?: Record<string, string>;

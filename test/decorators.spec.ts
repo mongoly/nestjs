@@ -133,6 +133,28 @@ describe("Schemas", () => {
       },
     });
   });
+  it.only("Should extend schemas", () => {
+    @Schema()
+    class A {
+      @Prop()
+      id: string;
+    }
+
+    @Schema()
+    class B extends A {
+      @Prop()
+      name: string;
+    }
+
+    const jsonSchema = createJSONSchemaForClass(B);
+    expect(jsonSchema).toEqual({
+      bsonType: "object",
+      properties: {
+        id: { bsonType: "string" },
+        name: { bsonType: "string" },
+      },
+    });
+  });
   it.fails("Should not create a sub schema if not specified", () => {
     class SubClass {
       @Prop()
