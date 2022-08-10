@@ -50,6 +50,9 @@ const transformJSONSchema = (
   jsonSchema: JSONSchemaObject,
   metadataOptions: JSONSchemaMetadata["options"],
 ) => {
+  if (metadataOptions.extends && metadataOptions.mergeWith) {
+    throw new Error(`Cannot use both "extends" and "mergeWith" options`);
+  }
   if (metadataOptions.extends) {
     const extendsJSONSchema = createJSONSchemaForClass(metadataOptions.extends);
     if (!extendsJSONSchema)
@@ -57,6 +60,12 @@ const transformJSONSchema = (
         `JSON schema for class "${metadataOptions.extends.name}" not found`,
       );
     mergeJSONSchemas(jsonSchema, extendsJSONSchema);
+  }
+  if (metadataOptions.mergeWith) {
+    if (metadataOptions.mergeWith instanceof Array) {
+      for (const mergeWith of metadataOptions.mergeWith)
+        mergeJSONSchemas(jsonSchema, mergeWith);
+    } else mergeJSONSchemas(jsonSchema, metadataOptions.mergeWith);
   }
   if (jsonSchema.properties) {
     if (metadataOptions.omitProperties && metadataOptions.pickProperties) {

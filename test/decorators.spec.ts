@@ -133,7 +133,7 @@ describe("Schemas", () => {
       },
     });
   });
-  it.only("Should extend schemas", () => {
+  it("Should extend schemas", () => {
     @Schema()
     class A {
       @Prop()
