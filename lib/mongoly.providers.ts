@@ -4,6 +4,7 @@ import type { JSONSchemaObject } from "@mongoly/core";
 import { ensureJSONSchema, ensureIndexes } from "@mongoly/core";
 import type { IndexDescription } from "mongodb";
 import { MongoClient } from "mongodb";
+import pluralize from "pluralize";
 import { getConnectionToken, getCollectionToken } from "./common/mongoly.utils";
 import type { MongolyModuleOptions } from "./types/mongoly-module-options.type";
 import { MODULE_OPTIONS_TOKEN } from "./mongoly-core.module-definition";
@@ -28,19 +29,10 @@ export const createConnectionProvider = (name?: string): FactoryProvider => ({
   inject: [MODULE_OPTIONS_TOKEN],
 });
 
-const pluralize = (str: string) => {
-  if (str.endsWith("s")) return str;
-  if (str.endsWith("y")) return `${str.slice(0, -1)}ies`;
-  if (str.endsWith("x")) return `${str}es`;
-  if (str.endsWith("ch")) return `${str}es`;
-  if (str.endsWith("sh")) return `${str}es`;
-  return `${str}s`;
-};
-
 const camelToSnakeCase = (str: string) =>
   str.replace(
     /[A-Z]/g,
-    (letter, i) => `${i === 0 ? "" : "_"}${letter.toLowerCase()}`
+    (letter, i) => `${i === 0 ? "" : "_"}${letter.toLowerCase()}`,
   );
 
 export type CollectionProviderOptions = {
@@ -52,7 +44,7 @@ export type CollectionProviderOptions = {
 
 export const createCollectionProvider = (
   { name, dropOldIndexes, indexes, schema }: CollectionProviderOptions,
-  mongoClientName?: string
+  mongoClientName?: string,
 ): FactoryProvider => ({
   provide: getCollectionToken(name, mongoClientName),
   useFactory: async (client: MongoClient) => {
@@ -63,7 +55,7 @@ export const createCollectionProvider = (
     if (indexes) {
       if (typeof dropOldIndexes !== "boolean") {
         throw new Error(
-          `"dropOldIndexes" must be a boolean, but got ${typeof dropOldIndexes}`
+          `"dropOldIndexes" must be a boolean, but got ${typeof dropOldIndexes}`,
         );
       }
       await ensureIndexes(collection, dropOldIndexes, indexes);
