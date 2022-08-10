@@ -8,7 +8,7 @@ import type {
 import { ObjectId } from "mongodb";
 import type { PropertyOptions } from "../types/property-options.type";
 import { addPropertyMetadata } from "../storages/type-metadata.storage";
-import { getJSONSchema } from "../storages/json-schema.storage";
+import { createJSONSchemaForClass } from "../factories/json-schema.factory";
 
 const DATA_TYPE_TO_BSON_TYPE = new Map<Type, BSONType>([
   [Number, "number"],
@@ -109,11 +109,7 @@ const createJSONSchemaForProperty = (
   )
     propertyOptions.isClass = true;
   if (propertyOptions.isClass) {
-    let jsonSchema = getJSONSchema(propertyOptions.type);
-    if (!jsonSchema)
-      throw new Error(
-        `Could not find JSON schema for class ${propertyOptions.type.name} at ${propertyPath}`,
-      );
+    let jsonSchema = createJSONSchemaForClass(propertyOptions.type);
     return propertyOptions.isArray
       ? {
           bsonType: propertyOptions.isNullable ? ["array", "null"] : "array",

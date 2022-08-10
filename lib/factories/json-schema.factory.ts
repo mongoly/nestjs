@@ -87,9 +87,11 @@ const transformJSONSchema = (
   }
 };
 
-export const createJSONSchemaForClass = <TClass>(target: Type<TClass>) => {
-  if (hasJSONSchema(target)) return getJSONSchema(target);
-
+export const createJSONSchemaForClass = <TClass>(
+  target: Type<TClass>,
+  save = true,
+) => {
+  if (hasJSONSchema(target)) return getJSONSchema(target)!;
   const metadata = getJSONSchemaMetadataByTarget(target);
   if (!metadata)
     throw new Error(`No JSONSchema metadata found for class ${target.name}`);
@@ -101,7 +103,7 @@ export const createJSONSchemaForClass = <TClass>(target: Type<TClass>) => {
   createJSONSchemaProperties(jsonSchema, propertiesMetadata);
   transformJSONSchema(jsonSchema, metadataOptions);
 
-  setJSONSchema(target, jsonSchema);
+  if (save) setJSONSchema(target, jsonSchema);
 
   return jsonSchema;
 };

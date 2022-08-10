@@ -1,6 +1,7 @@
 import type { Type } from "@nestjs/common";
 import type { IndexDescription } from "mongodb";
 import { getPropertiesByTarget } from "../storages/type-metadata.storage";
+import { hasIndexes, getIndexes, setIndexes } from "../storages/index.storage";
 
 export const createIndex = (
   key: string,
@@ -20,6 +21,7 @@ export const createIndexesForClass = <TClass>(
   target: Type<TClass>,
   parentKey?: string,
 ) => {
+  if (hasIndexes(target)) return getIndexes(target)!;
   const indexes: IndexDescription[] = [];
   const propertiesMetadata = getPropertiesByTarget(target);
   for (const propertyMetadata of propertiesMetadata) {
@@ -52,5 +54,6 @@ export const createIndexesForClass = <TClass>(
       indexes.push(...subIndexes);
     }
   }
+  setIndexes(target, indexes);
   return indexes;
 };
