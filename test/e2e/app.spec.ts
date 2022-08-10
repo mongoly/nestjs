@@ -10,6 +10,7 @@ describe("App", () => {
   let client: MongoClient;
 
   beforeAll(async () => {
+    console.log("beforeAll");
     const moduleRef = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();
@@ -45,7 +46,7 @@ describe("App", () => {
       // @ts-ignore
       catsService.create({
         name: "Fluffy",
-      })
+      }),
     ).rejects.toThrowError("Document failed validation");
   });
 

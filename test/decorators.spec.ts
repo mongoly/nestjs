@@ -103,6 +103,53 @@ describe("Schemas", () => {
       required: ["name", "email"],
     });
   });
+  it("Should automatically create sub schemas", () => {
+    @Schema()
+    class SubClass {
+      @Prop()
+      name: string;
+    }
+
+    @Schema()
+    class ParentClass {
+      @Prop()
+      id: string;
+
+      @Prop()
+      sub: SubClass;
+    }
+
+    const jsonSchema = createJSONSchemaForClass(ParentClass);
+    expect(jsonSchema).toEqual({
+      bsonType: "object",
+      properties: {
+        id: { bsonType: "string" },
+        sub: {
+          bsonType: "object",
+          properties: {
+            name: { bsonType: "string" },
+          },
+        },
+      },
+    });
+  });
+  it.fails("Should not create a sub schema if not specified", () => {
+    class SubClass {
+      @Prop()
+      name: string;
+    }
+
+    @Schema()
+    class ParentClass {
+      @Prop()
+      id: string;
+
+      @Prop()
+      sub: SubClass;
+    }
+
+    createJSONSchemaForClass(ParentClass);
+  });
 });
 
 describe("Indexes", () => {

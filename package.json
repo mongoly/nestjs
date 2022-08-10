@@ -21,6 +21,7 @@
   "scripts": {
     "test:app": "vitest app",
     "test:decorators": "vitest decorators",
+    "test:e2e": "ts-node test/e2e/src/main.ts",
     "test": "vitest --run",
     "build": "rimraf dist && tsc -p tsconfig.build.json",
     "release": "npm run test && npm run build && release-it"

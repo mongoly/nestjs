@@ -1,5 +1,5 @@
 import { ModuleRef } from "@nestjs/core";
-import type { OnApplicationShutdown } from "@nestjs/common";
+import { OnApplicationShutdown } from "@nestjs/common";
 import { Inject, Global, Module } from "@nestjs/common";
 import { MONGO_CONNECTION_NAME } from "./mongoly.constants";
 import { ConfigurableModuleClass } from "./mongoly-core.module-definition";
@@ -12,7 +12,7 @@ export class MongolyCoreModule
 {
   constructor(
     @Inject(MONGO_CONNECTION_NAME) private readonly connectionName: string,
-    private readonly moduleRef: ModuleRef
+    private readonly moduleRef: ModuleRef,
   ) {
     super();
   }
