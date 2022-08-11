@@ -34,6 +34,6 @@ export type PropertyOptions = {
   excludeFromIndexes?: boolean;
   type?: Type | [Type];
   enum?: any | any[];
-  index?: PropertyIndexOptions;
+  index?: 1 | -1 | true | PropertyIndexOptions;
   schema?: PropertySchemaOptions;
 };

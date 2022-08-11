@@ -5,6 +5,7 @@ import {
   Schema,
   createJSONSchemaForClass,
   createIndexesForClass,
+  Raw,
 } from "../lib";
 
 describe("Schemas", () => {
@@ -22,7 +23,7 @@ describe("Schemas", () => {
       bsonType: "object",
       properties: {
         name: { bsonType: "string" },
-        age: { bsonType: ["number", "null"] },
+        age: { bsonType: ["null", "number"] },
       },
       required: ["name"],
     });
@@ -47,7 +48,7 @@ describe("Schemas", () => {
     });
 
     @Schema()
-    class TestClass {
+    class MyClass {
       @Prop({ isRequired: true, schema: { minLength: 2 } })
       name: string;
 
@@ -60,7 +61,7 @@ describe("Schemas", () => {
       @Prop({ enum: Gender })
       gender: Gender;
 
-      @Prop({ isNullable: true })
+      @Raw(friendJSONSchema, { isNullable: true })
       bestFriend?: FriendClass;
 
       @Prop({
@@ -74,19 +75,23 @@ describe("Schemas", () => {
         schema: { minItems: 1, minimum: 0 },
       })
       numbers: number[];
+
+      @Prop([Number])
+      moreNumbers: number[];
     }
 
-    const jsonSchema = createJSONSchemaForClass(TestClass);
+    const jsonSchema = createJSONSchemaForClass(MyClass);
+    console.dir(jsonSchema, { depth: null });
     expect(jsonSchema).toEqual({
       bsonType: "object",
       properties: {
         name: { bsonType: "string", minLength: 2 },
         email: { bsonType: "string" },
-        age: { bsonType: ["number", "null"], minimum: 16 },
+        age: { bsonType: ["null", "number"], minimum: 16 },
         gender: { enum: ["M", "F", 0, 1] },
         bestFriend: {
           ...friendJSONSchema,
-          bsonType: ["object", "null"],
+          bsonType: ["null", "object"],
         },
         friends: {
           bsonType: "array",
@@ -98,6 +103,10 @@ describe("Schemas", () => {
           bsonType: "array",
           items: { bsonType: "number", minimum: 0 },
           minItems: 1,
+        },
+        moreNumbers: {
+          bsonType: "array",
+          items: { bsonType: "number" },
         },
       },
       required: ["name", "email"],
@@ -146,58 +155,63 @@ describe("Schemas", () => {
       name: string;
     }
 
-    const jsonSchema = createJSONSchemaForClass(B);
+    @Schema()
+    class C extends B {
+      @Prop()
+      age: number;
+    }
+
+    @Schema()
+    class D extends C {
+      @Prop()
+      address: string;
+    }
+
+    const jsonSchema = createJSONSchemaForClass(D);
     expect(jsonSchema).toEqual({
       bsonType: "object",
       properties: {
         id: { bsonType: "string" },
         name: { bsonType: "string" },
+        age: { bsonType: "number" },
+        address: { bsonType: "string" },
       },
     });
   });
-  it.fails("Should not create a sub schema if not specified", () => {
-    class SubClass {
-      @Prop()
-      name: string;
-    }
-
-    @Schema()
-    class ParentClass {
-      @Prop()
-      id: string;
-
-      @Prop()
-      sub: SubClass;
-    }
-
-    createJSONSchemaForClass(ParentClass);
-  });
 });
 
-describe("Indexes", () => {
+describe.only("Indexes", () => {
   it("Should create valid indexes", () => {
     @Schema()
     class TestClass {
       @Prop({ index: { isUnique: true } })
-      name: string;
+      id: string;
 
       @Prop({ isIndexed: true })
+      name: string;
+
+      @Prop({ index: -1 })
       age: number;
+
+      @Prop({ index: true })
+      address: string;
     }
     const indexes = createIndexesForClass(TestClass);
     expect(indexes).toEqual([
-      { key: { name: 1 }, unique: true },
-      { key: { age: 1 } },
+      { key: { id: 1 }, unique: true },
+      { key: { name: 1 } },
+      { key: { age: -1 } },
+      { key: { address: 1 } },
     ]);
   });
 
   it("Should create nested indexes", () => {
     @Schema()
     class SubClass {
-      @Prop({ isIndexed: true })
+      @Prop({ index: true })
       name: string;
 
-      @Prop({ isIndexed: true, excludeFromIndexes: true })
+      @Prop({ index: true, excludeFromIndexes: true })
       age: number;
     }
 

@@ -10,19 +10,31 @@ import type { PropertyOptions } from "../types/property-options.type";
 import { addPropertyMetadata } from "../storages/type-metadata.storage";
 import { createJSONSchemaForClass } from "../factories/json-schema.factory";
 
+const BUILT_IN_TYPES = new Set<Type>([
+  Number,
+  String,
+  Boolean,
+  Date,
+  Array,
+  Object,
+  Set,
+  Map,
+]);
+
 const DATA_TYPE_TO_BSON_TYPE = new Map<Type, BSONType>([
   [Number, "number"],
   [Boolean, "bool"],
   [String, "string"],
   [Date, "date"],
+  [Buffer, "binData"],
   [ObjectId, "objectId"],
 ]);
 
-const isSupported = (target: Type): boolean =>
-  DATA_TYPE_TO_BSON_TYPE.has(target);
+const isBuiltInType = (target: Type) => BUILT_IN_TYPES.has(target);
 
 const isClass = (target: unknown): target is Type =>
-  typeof target === "function";
+  typeof target === "function" &&
+  /^class\s/.test(Function.prototype.toString.call(target));
 
 const getArrayKeywords = (propertyOptions: PropertyOptions): ArrayKeywords => {
   const arrayProps: ArrayKeywords = {};
@@ -68,81 +80,89 @@ const createJSONSchemaForProperty = (
   propertyOptions: PropertyOptions,
 ): JSONSchema => {
   if (!target || typeof target !== "object")
-    throw new Error("@Property must be used in a class");
+    throw new Error("`@Property` must be used in a class");
 
   const className = target.constructor.name;
   const propertyPath = `${className}.${propertyKey}`;
-
-  const arrayProps = getArrayKeywords(propertyOptions);
-  const scalarProps = getScalarKeywords(propertyOptions);
-
   const designType = Reflect.getMetadata("design:type", target, propertyKey);
+  const arrayProps = getArrayKeywords(propertyOptions);
 
-  // Don't have to set `isArray` here b/c it will bet set in few lines below
-  if (propertyOptions.type && propertyOptions.type instanceof Array)
-    propertyOptions.type = propertyOptions.type[0];
-  if (!propertyOptions.type) propertyOptions.type = designType as Type;
+  // Ensure `isArray` is properly inferred
   if (!propertyOptions.isArray) propertyOptions.isArray = designType === Array;
-  // At this point, `type` and `isArray` should be set correctly.
+  const arrayBSONType: BSONType | BSONType[] = propertyOptions.isNullable
+    ? ["null", "array"]
+    : "array";
 
   if (propertyOptions.enum) {
     if (typeof propertyOptions.enum !== "object")
       throw new Error("enum values must be an object");
     if (!(propertyOptions.enum instanceof Array))
       propertyOptions.enum = Object.values(propertyOptions.enum);
-    if (propertyOptions.isNullable) propertyOptions.enum.push(null);
     return propertyOptions.isArray
       ? {
-          bsonType: "array",
+          bsonType: arrayBSONType,
           items: { enum: propertyOptions.enum },
           ...arrayProps,
         }
-      : { enum: propertyOptions.enum };
+      : {
+          enum: propertyOptions.isNullable
+            ? [null, ...propertyOptions.enum]
+            : propertyOptions.enum,
+        };
   }
 
-  // Now ensure that `isClass` is properly inferred
+  // Ensure `type` & `isClass` are properly inferred
+  if (propertyOptions.type && propertyOptions.type instanceof Array) {
+    if (propertyOptions.type.length > 1)
+      throw new Error(
+        `More than one type specified at "${propertyPath}", this is not yet supported.`,
+      );
+    propertyOptions.type = propertyOptions.type[0];
+  }
+  if (!propertyOptions.type) propertyOptions.type = designType as Type;
   if (
     !propertyOptions.isClass &&
-    !isSupported(propertyOptions.type) &&
-    isClass(propertyOptions.type)
+    isClass(propertyOptions.type) &&
+    !isBuiltInType(propertyOptions.type)
   )
     propertyOptions.isClass = true;
+
   if (propertyOptions.isClass) {
     let jsonSchema = createJSONSchemaForClass(propertyOptions.type);
     return propertyOptions.isArray
       ? {
-          bsonType: propertyOptions.isNullable ? ["array", "null"] : "array",
+          bsonType: arrayBSONType,
           items: jsonSchema,
           ...arrayProps,
         }
       : {
           ...jsonSchema,
-          bsonType: propertyOptions.isNullable ? ["object", "null"] : "object",
+          bsonType: propertyOptions.isNullable ? ["null", "object"] : "object",
         };
   }
 
   let bsonType = DATA_TYPE_TO_BSON_TYPE.get(propertyOptions.type);
-  if (!bsonType) throw new Error(`Unable to determine type at ${propertyPath}`);
+  if (!bsonType)
+    throw new Error(`Unable to determine type at "${propertyPath}"`);
+  const scalarProps = getScalarKeywords(propertyOptions);
   return propertyOptions.isArray
     ? {
-        bsonType: propertyOptions.isNullable ? ["array", "null"] : "array",
+        bsonType: arrayBSONType,
         items: { bsonType, ...scalarProps },
         ...arrayProps,
       }
     : {
-        bsonType: propertyOptions.isNullable ? [bsonType, "null"] : bsonType,
+        bsonType: propertyOptions.isNullable ? ["null", bsonType] : bsonType,
         ...scalarProps,
       };
 };
 
-export const RawProp =
+export const Raw =
   (
     jsonSchema: JSONSchema | JSONSchema[],
     propertyOptions: PropertyOptions = {},
   ) =>
   (target: unknown, propertyKey: string) => {
-    if (propertyOptions.isClass)
-      throw new Error("@RawProp does not support `isClass`");
     if (jsonSchema instanceof Array || propertyOptions.isArray) {
       const arrayKeywords = getArrayKeywords(propertyOptions);
       jsonSchema = {
@@ -151,20 +171,15 @@ export const RawProp =
         ...arrayKeywords,
       };
     } else {
-      if (propertyOptions.schema)
-        throw new Error(
-          "@RawProp does not support schema for non-array properties",
-        );
-      const typeKeyword = jsonSchema.type ? "type" : "bsonType";
-      if (!jsonSchema[typeKeyword])
+      if (!jsonSchema.bsonType && !jsonSchema.type)
         throw new Error("JSON schema missing `type` or `bsonType`");
-      if (propertyOptions.isNullable) {
-        if (jsonSchema[typeKeyword] instanceof Array) {
-          (jsonSchema[typeKeyword] as any[]).push("null");
-        } else {
-          jsonSchema.bsonType = [jsonSchema.bsonType as any, "null"];
-        }
-      }
+      else if (jsonSchema.bsonType && jsonSchema.type)
+        throw new Error("JSON schema cannot have both `type` and `bsonType`");
+      const typeKeyword = jsonSchema.type ? "type" : "bsonType";
+      if (propertyOptions.isNullable)
+        if (jsonSchema[typeKeyword] instanceof Array)
+          (jsonSchema[typeKeyword] as any[]).unshift("null");
+        else jsonSchema.bsonType = ["null", jsonSchema.bsonType as any];
     }
 
     addPropertyMetadata((target as Object).constructor, {
@@ -175,8 +190,15 @@ export const RawProp =
   };
 
 export const Prop =
-  (propertyOptions: PropertyOptions = {}) =>
+  (propertyOptionsOrType?: Type | [Type] | PropertyOptions) =>
   (target: unknown, propertyKey: string) => {
+    const propertyOptions =
+      propertyOptionsOrType !== undefined
+        ? typeof propertyOptionsOrType === "function" ||
+          propertyOptionsOrType instanceof Array
+          ? { type: propertyOptionsOrType }
+          : propertyOptionsOrType
+        : {};
     const jsonSchema = createJSONSchemaForProperty(
       target,
       propertyKey,

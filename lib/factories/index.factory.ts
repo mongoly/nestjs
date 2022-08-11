@@ -1,7 +1,7 @@
 import type { Type } from "@nestjs/common";
 import type { IndexDescription } from "mongodb";
 import { getPropertiesByTarget } from "../storages/type-metadata.storage";
-import { hasIndexes, getIndexes, setIndexes } from "../storages/index.storage";
+import { getIndexes, setIndexes } from "../storages/index.storage";
 
 export const createIndex = (
   key: string,
@@ -9,33 +9,34 @@ export const createIndex = (
   isUnique?: boolean,
   isSparse?: boolean,
 ) => {
-  const description: IndexDescription = {
-    key: { [key]: index },
-  };
+  if (index !== 1 && index !== -1 && index !== "text" && index !== "2dsphere")
+    throw new Error(`Invalid index type at "${key}", got "${index}"`);
+  const description: IndexDescription = { key: { [key]: index } };
   if (isUnique) description.unique = true;
   if (isSparse) description.sparse = true;
   return description;
 };
 
-export const createIndexesForClass = <TClass>(
-  target: Type<TClass>,
-  parentKey?: string,
-) => {
-  if (hasIndexes(target)) return getIndexes(target)!;
+export const createIndexesForClass = (target: Type, parentKey?: string) => {
+  const existingIndexes = getIndexes(target);
+  if (existingIndexes) return existingIndexes;
+
   const indexes: IndexDescription[] = [];
   const propertiesMetadata = getPropertiesByTarget(target);
   for (const propertyMetadata of propertiesMetadata) {
     const { options } = propertyMetadata;
     if (!options) continue;
-    const isIndexed = options.isIndexed || options.index !== undefined;
+    const isIndexed = options.isIndexed || options.index;
     if (parentKey && isIndexed && options.excludeFromIndexes) continue;
     const key = parentKey
       ? `${parentKey}.${propertyMetadata.key}`
       : propertyMetadata.key;
     if (isIndexed) {
       indexes.push(
-        !options.index
+        typeof options.index === "boolean" || !options.index
           ? createIndex(key, 1)
+          : typeof options.index === "number"
+          ? createIndex(key, options.index)
           : createIndex(
               key,
               options.index.is2DSphere
@@ -49,11 +50,13 @@ export const createIndexesForClass = <TClass>(
       );
     }
     if (options.isClass && !options.excludeSubIndexes) {
-      if (!options.type) throw new Error(`Property "${key}" has no type`);
+      if (!options.type) throw new Error(`Property at "${key}" has no type`);
       const subIndexes = createIndexesForClass(options.type as Type, key);
       indexes.push(...subIndexes);
     }
   }
+
   setIndexes(target, indexes);
+
   return indexes;
 };
