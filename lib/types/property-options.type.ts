@@ -27,6 +27,7 @@ export type PropertySchemaOptions = {
 export type PropertyOptions = {
   isRequired?: boolean;
   isNullable?: boolean;
+  isArrayNonNullable?: boolean;
   isClass?: boolean;
   isArray?: boolean;
   isIndexed?: boolean;

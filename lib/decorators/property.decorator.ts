@@ -89,26 +89,24 @@ const createJSONSchemaForProperty = (
 
   // Ensure `isArray` is properly inferred
   if (!propertyOptions.isArray) propertyOptions.isArray = designType === Array;
-  const arrayBSONType: BSONType | BSONType[] = propertyOptions.isNullable
-    ? ["null", "array"]
-    : "array";
+  const arrayBSONType: BSONType | BSONType[] =
+    propertyOptions.isNullable && !!propertyOptions.isArrayNonNullable
+      ? ["null", "array"]
+      : "array";
 
   if (propertyOptions.enum) {
     if (typeof propertyOptions.enum !== "object")
       throw new Error("enum values must be an object");
     if (!(propertyOptions.enum instanceof Array))
       propertyOptions.enum = Object.values(propertyOptions.enum);
+    if (propertyOptions.isNullable) propertyOptions.enum.unshift(null);
     return propertyOptions.isArray
       ? {
           bsonType: arrayBSONType,
           items: { enum: propertyOptions.enum },
           ...arrayProps,
         }
-      : {
-          enum: propertyOptions.isNullable
-            ? [null, ...propertyOptions.enum]
-            : propertyOptions.enum,
-        };
+      : { enum: propertyOptions.enum };
   }
 
   // Ensure `type` & `isClass` are properly inferred
