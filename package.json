@@ -23,11 +23,11 @@
     "test:decorators": "vitest decorators",
     "test:e2e": "ts-node test/e2e/src/main.ts",
     "test": "vitest --run",
-    "build": "rimraf dist && tsc -p tsconfig.build.json",
+    "build": "rimraf dist && tsc",
     "release": "npm run test && npm run build && release-it"
   },
   "dependencies": {
-    "@mongoly/core": "^0.1.8",
+    "@mongoly/core": "^0.1.9",
     "pluralize": "^8.0.0"
   },
   "devDependencies": {
