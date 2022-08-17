@@ -25,11 +25,12 @@ export class MongolyModule {
   }
 
   static forFeature(
-    collections: CollectionProviderOptions[] = [],
-    connectionName?: string
+    collections: CollectionProviderOptions | CollectionProviderOptions[],
+    connectionName?: string,
   ): DynamicModule {
+    if (!Array.isArray(collections)) collections = [collections];
     const providers = collections.map((collection) =>
-      createCollectionProvider(collection, connectionName)
+      createCollectionProvider(collection, connectionName),
     );
     return {
       module: MongolyModule,
