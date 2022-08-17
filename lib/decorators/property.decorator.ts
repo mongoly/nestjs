@@ -162,16 +162,40 @@ const createJSONSchemaForProperty = (
       };
 };
 
+const determinePropertyOptions = (
+  propertyOptionsOrType?: Type | Type[] | PropertyOptions,
+) => {
+  const propertyOptions =
+    propertyOptionsOrType !== undefined
+      ? typeof propertyOptionsOrType === "function" ||
+        propertyOptionsOrType instanceof Array
+        ? { type: propertyOptionsOrType }
+        : propertyOptionsOrType
+      : {};
+  return propertyOptions;
+};
+
 export const Prop =
   (propertyOptionsOrType?: Type | Type[] | PropertyOptions) =>
   (target: unknown, propertyKey: string) => {
-    const propertyOptions =
-      propertyOptionsOrType !== undefined
-        ? typeof propertyOptionsOrType === "function" ||
-          propertyOptionsOrType instanceof Array
-          ? { type: propertyOptionsOrType }
-          : propertyOptionsOrType
-        : {};
+    const propertyOptions = determinePropertyOptions(propertyOptionsOrType);
+    const jsonSchema = createJSONSchemaForProperty(
+      target,
+      propertyKey,
+      propertyOptions,
+    );
+    addPropertyMetadata((target as Object).constructor, {
+      jsonSchema,
+      key: propertyKey,
+      options: propertyOptions,
+    });
+  };
+
+export const OptionalProp =
+  (propertyOptionsOrType?: Type | Type[] | PropertyOptions) =>
+  (target: unknown, propertyKey: string) => {
+    const propertyOptions = determinePropertyOptions(propertyOptionsOrType);
+    propertyOptions.isNullable = true;
     const jsonSchema = createJSONSchemaForProperty(
       target,
       propertyKey,
