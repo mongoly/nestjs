@@ -61,7 +61,7 @@ describe("Schemas", () => {
       @Prop({ enum: Gender })
       gender: Gender;
 
-      @Raw(friendJSONSchema, { isNullable: true })
+      @Raw({ ...friendJSONSchema, bsonType: ["null", "object"] })
       bestFriend?: FriendClass;
 
       @Prop({
@@ -180,7 +180,7 @@ describe("Schemas", () => {
   });
 });
 
-describe.only("Indexes", () => {
+describe("Indexes", () => {
   it("Should create valid indexes", () => {
     @Schema()
     class TestClass {

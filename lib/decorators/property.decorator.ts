@@ -74,6 +74,15 @@ const getScalarKeywords = (
   return scalarProps;
 };
 
+export const creatJSONSchemaForArrayProperty = (
+  target: unknown,
+  propertyKey: string,
+  propertyOptions: PropertyOptions,
+) => {
+  if (!target || typeof target !== "object")
+    throw new Error("`@Property` must be used in a class");
+};
+
 const createJSONSchemaForProperty = (
   target: unknown,
   propertyKey: string,
@@ -86,8 +95,6 @@ const createJSONSchemaForProperty = (
   const propertyPath = `${className}.${propertyKey}`;
   const designType = Reflect.getMetadata("design:type", target, propertyKey);
   const arrayProps = getArrayKeywords(propertyOptions);
-
-  // Ensure `isArray` is properly inferred
   if (!propertyOptions.isArray) propertyOptions.isArray = designType === Array;
   const arrayBSONType: BSONType | BSONType[] =
     propertyOptions.isNullable && !!propertyOptions.isArrayNonNullable
@@ -155,40 +162,8 @@ const createJSONSchemaForProperty = (
       };
 };
 
-export const Raw =
-  (
-    jsonSchema: JSONSchema | JSONSchema[],
-    propertyOptions: PropertyOptions = {},
-  ) =>
-  (target: unknown, propertyKey: string) => {
-    if (jsonSchema instanceof Array || propertyOptions.isArray) {
-      const arrayKeywords = getArrayKeywords(propertyOptions);
-      jsonSchema = {
-        bsonType: propertyOptions.isNullable ? ["array", "null"] : "array",
-        items: jsonSchema,
-        ...arrayKeywords,
-      };
-    } else {
-      if (!jsonSchema.bsonType && !jsonSchema.type)
-        throw new Error("JSON schema missing `type` or `bsonType`");
-      else if (jsonSchema.bsonType && jsonSchema.type)
-        throw new Error("JSON schema cannot have both `type` and `bsonType`");
-      const typeKeyword = jsonSchema.type ? "type" : "bsonType";
-      if (propertyOptions.isNullable)
-        if (jsonSchema[typeKeyword] instanceof Array)
-          (jsonSchema[typeKeyword] as any[]).unshift("null");
-        else jsonSchema.bsonType = ["null", jsonSchema.bsonType as any];
-    }
-
-    addPropertyMetadata((target as Object).constructor, {
-      jsonSchema,
-      key: propertyKey,
-      options: propertyOptions,
-    });
-  };
-
 export const Prop =
-  (propertyOptionsOrType?: Type | [Type] | PropertyOptions) =>
+  (propertyOptionsOrType?: Type | Type[] | PropertyOptions) =>
   (target: unknown, propertyKey: string) => {
     const propertyOptions =
       propertyOptionsOrType !== undefined
@@ -202,6 +177,16 @@ export const Prop =
       propertyKey,
       propertyOptions,
     );
+    addPropertyMetadata((target as Object).constructor, {
+      jsonSchema,
+      key: propertyKey,
+      options: propertyOptions,
+    });
+  };
+
+export const Raw =
+  (jsonSchema: JSONSchema = {}, propertyOptions: PropertyOptions = {}) =>
+  (target: unknown, propertyKey: string) => {
     addPropertyMetadata((target as Object).constructor, {
       jsonSchema,
       key: propertyKey,

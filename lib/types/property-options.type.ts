@@ -1,3 +1,4 @@
+import { JSONSchemaArray } from "@mongoly/core";
 import type { Type } from "@nestjs/common";
 
 export type PropertyIndexOptions = {
@@ -30,10 +31,11 @@ export type PropertyOptions = {
   isArrayNonNullable?: boolean;
   isClass?: boolean;
   isArray?: boolean;
+  arrayType?: JSONSchemaArray;
   isIndexed?: boolean;
   excludeSubIndexes?: boolean;
   excludeFromIndexes?: boolean;
-  type?: Type | [Type];
+  type?: Type | Type[];
   enum?: any | any[];
   index?: 1 | -1 | true | PropertyIndexOptions;
   schema?: PropertySchemaOptions;
