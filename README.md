@@ -1,10 +1,17 @@
 # @mongoly/nestjs
+
 The official nest module for mongoly
+
+> This package is under heavy development and will continously receive breaking changes, use at your own risk!
+
 ## Installation
+
 ```bash
 npm install mongodb @mongoly/core @mongoly/nestjs
 ```
+
 ## Usage
+
 ```ts
 // app.module.ts
 import { Module } from "@nestjs/common";
@@ -20,6 +27,7 @@ import { ensureJSONSchema, ensureIndexes } from "@mongoly/nestjs";
 })
 export class AppModule {}
 ```
+
 ```ts
 // cats.module.ts
 import { Module } from "@nestjs/common";
@@ -43,6 +51,7 @@ import { CatsService } from "./cats.service";
 })
 export class CatsModule {}
 ```
+
 ```ts
 // cats.entity.ts
 import {
@@ -67,6 +76,7 @@ export class Cat {
 export const CatSchema = createJSONSchemaForClass(Cat);
 export const CatIndexes = createIndexesForClass(Cat);
 ```
+
 ```ts
 // cats.service.ts
 import { Injectable } from "@nestjs/common";
@@ -77,8 +87,8 @@ import { Cat } from "./cats.entity";
 @Injectable()
 export class CatsService {
   constructor(
-    @InjectCollection(Cat.name) private readonly catsCollection: Collection<Cat>
+    @InjectCollection(Cat.name)
+    private readonly catsCollection: Collection<Cat>,
   ) {}
 }
 ```
-

@@ -74,15 +74,6 @@ const getScalarKeywords = (
   return scalarProps;
 };
 
-export const creatJSONSchemaForArrayProperty = (
-  target: unknown,
-  propertyKey: string,
-  propertyOptions: PropertyOptions,
-) => {
-  if (!target || typeof target !== "object")
-    throw new Error("`@Property` must be used in a class");
-};
-
 const createJSONSchemaForProperty = (
   target: unknown,
   propertyKey: string,
@@ -175,20 +166,33 @@ const determinePropertyOptions = (
   return propertyOptions;
 };
 
+const addProperty = (
+  target: unknown,
+  key: string,
+  jsonSchema: JSONSchema,
+  options: PropertyOptions,
+) => {
+  addPropertyMetadata((target as Object).constructor, {
+    jsonSchema,
+    key,
+    options,
+  });
+};
+
+const createAndAddProperty = (
+  target: unknown,
+  key: string,
+  options: PropertyOptions,
+) => {
+  const jsonSchema = createJSONSchemaForProperty(target, key, options);
+  addProperty(target, key, jsonSchema, options);
+};
+
 export const Prop =
   (propertyOptionsOrType?: Type | Type[] | PropertyOptions) =>
   (target: unknown, propertyKey: string) => {
     const propertyOptions = determinePropertyOptions(propertyOptionsOrType);
-    const jsonSchema = createJSONSchemaForProperty(
-      target,
-      propertyKey,
-      propertyOptions,
-    );
-    addPropertyMetadata((target as Object).constructor, {
-      jsonSchema,
-      key: propertyKey,
-      options: propertyOptions,
-    });
+    createAndAddProperty(target, propertyKey, propertyOptions);
   };
 
 export const OptionalProp =
@@ -196,24 +200,11 @@ export const OptionalProp =
   (target: unknown, propertyKey: string) => {
     const propertyOptions = determinePropertyOptions(propertyOptionsOrType);
     propertyOptions.isNullable = true;
-    const jsonSchema = createJSONSchemaForProperty(
-      target,
-      propertyKey,
-      propertyOptions,
-    );
-    addPropertyMetadata((target as Object).constructor, {
-      jsonSchema,
-      key: propertyKey,
-      options: propertyOptions,
-    });
+    createAndAddProperty(target, propertyKey, propertyOptions);
   };
 
 export const Raw =
   (jsonSchema: JSONSchema = {}, propertyOptions: PropertyOptions = {}) =>
   (target: unknown, propertyKey: string) => {
-    addPropertyMetadata((target as Object).constructor, {
-      jsonSchema,
-      key: propertyKey,
-      options: propertyOptions,
-    });
+    addProperty(target, propertyKey, jsonSchema, propertyOptions);
   };
