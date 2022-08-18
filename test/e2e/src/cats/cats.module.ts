@@ -10,7 +10,6 @@ import { CatsService } from "./cats.service";
         name: Cat.name,
         schema: CatsSchema,
         indexes: CatsIndexes,
-        dropOldIndexes: true,
       },
     ]),
   ],
