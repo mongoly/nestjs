@@ -43,7 +43,7 @@ export type CollectionProviderOptions = {
 };
 
 export const createCollectionProvider = (
-  { name, dropOldIndexes, indexes, schema }: CollectionProviderOptions,
+  { name, dropOldIndexes = true, indexes, schema }: CollectionProviderOptions,
   mongoClientName?: string,
 ): FactoryProvider => ({
   provide: getCollectionToken(name, mongoClientName),
