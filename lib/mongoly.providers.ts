@@ -37,29 +37,23 @@ const camelToSnakeCase = (str: string) =>
 
 export type CollectionProviderOptions = {
   name: string;
-  dropOldIndexes?: boolean;
+  collectionName?: string;
   indexes?: IndexDescription[];
   schema?: JSONSchemaObject;
 };
 
 export const createCollectionProvider = (
-  { name, dropOldIndexes = true, indexes, schema }: CollectionProviderOptions,
+  { name, collectionName, indexes, schema }: CollectionProviderOptions,
   mongoClientName?: string,
 ): FactoryProvider => ({
   provide: getCollectionToken(name, mongoClientName),
   useFactory: async (client: MongoClient) => {
-    const pluralized = camelToSnakeCase(pluralize(name)).toLowerCase();
+    if (!collectionName)
+      collectionName = camelToSnakeCase(pluralize(name)).toLowerCase();
     const db = client.db();
-    const collection = db.collection(pluralized);
-    if (schema) await ensureJSONSchema(db, pluralized, schema);
-    if (indexes) {
-      if (typeof dropOldIndexes !== "boolean") {
-        throw new Error(
-          `"dropOldIndexes" must be a boolean, but got ${typeof dropOldIndexes}`,
-        );
-      }
-      await ensureIndexes(collection, dropOldIndexes, indexes);
-    }
+    if (schema) await ensureJSONSchema(db, collectionName, schema);
+    const collection = db.collection(collectionName);
+    if (indexes) await ensureIndexes(collection, true, indexes);
     return collection;
   },
   inject: [getConnectionToken(mongoClientName)],
