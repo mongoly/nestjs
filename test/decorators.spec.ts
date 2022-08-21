@@ -81,7 +81,6 @@ describe("Schemas", () => {
     }
 
     const jsonSchema = createJSONSchemaForClass(MyClass);
-    console.dir(jsonSchema, { depth: null });
     expect(jsonSchema).toEqual({
       bsonType: "object",
       properties: {
@@ -215,8 +214,6 @@ describe("Indexes", () => {
       age: number;
     }
 
-    createJSONSchemaForClass(SubClass);
-
     @Schema()
     class TestClass {
       @Prop({ index: { isUnique: true } })
@@ -229,7 +226,10 @@ describe("Indexes", () => {
       nameRefWithoutIndex: SubClass;
     }
 
-    const indexes = createIndexesForClass(TestClass);
+    @Schema()
+    class Test2Class extends TestClass {}
+
+    const indexes = createIndexesForClass(Test2Class);
     expect(indexes).toEqual([
       { key: { id: 1 }, unique: true },
       { key: { "nameRef.name": 1 } },

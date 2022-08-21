@@ -1,5 +1,6 @@
 import { JSONSchemaObject } from "@mongoly/core";
 import { flatten, Type } from "@nestjs/common";
+
 import type { PropertyMetadata } from "../types/property-metadata.type";
 import {
   getJSONSchemaMetadataByTarget,

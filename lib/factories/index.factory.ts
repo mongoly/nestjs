@@ -1,6 +1,11 @@
 import type { Type } from "@nestjs/common";
 import type { IndexDescription } from "mongodb";
-import { getPropertiesByTarget } from "../storages/type-metadata.storage";
+
+import type { PropertyMetadata } from "../types/property-metadata.type";
+import {
+  getJSONSchemaMetadataByTarget,
+  getPropertiesByTarget,
+} from "../storages/type-metadata.storage";
 import { getIndexes, setIndexes } from "../storages/index.storage";
 
 export const createIndex = (
@@ -17,12 +22,11 @@ export const createIndex = (
   return description;
 };
 
-export const createIndexesForClass = (target: Type, parentKey?: string) => {
-  const existingIndexes = getIndexes(target);
-  if (existingIndexes) return existingIndexes;
-
+export const generateIndexes = (
+  propertiesMetadata: PropertyMetadata[],
+  parentKey?: string,
+) => {
   const indexes: IndexDescription[] = [];
-  const propertiesMetadata = getPropertiesByTarget(target);
   for (const propertyMetadata of propertiesMetadata) {
     const { options } = propertyMetadata;
     if (!options) continue;
@@ -54,6 +58,24 @@ export const createIndexesForClass = (target: Type, parentKey?: string) => {
       const subIndexes = createIndexesForClass(options.type as Type, key);
       indexes.push(...subIndexes);
     }
+  }
+  return indexes;
+};
+
+export const createIndexesForClass = (target: Type, parentKey?: string) => {
+  const existingIndexes = getIndexes(target);
+  if (existingIndexes) return existingIndexes;
+
+  const metadata = getJSONSchemaMetadataByTarget(target) || {};
+  const propertiesMetadata = getPropertiesByTarget(target);
+  let indexes = generateIndexes(propertiesMetadata, parentKey);
+
+  if (metadata.options && metadata.options.extends) {
+    const parentIndexes = createIndexesForClass(
+      metadata.options.extends,
+      parentKey,
+    );
+    indexes = [...parentIndexes, ...indexes];
   }
 
   setIndexes(target, indexes);
