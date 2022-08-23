@@ -49,15 +49,6 @@ export const createJSONSchemaForClass = (target: Type) => {
   const propertiesMetadata = getPropertiesByTarget(target);
   createJSONSchemaProperties(jsonSchema, propertiesMetadata);
 
-  if (!metadata.options.extends) {
-    const parent = Object.getPrototypeOf(target);
-    if (
-      parent.prototype !== undefined &&
-      parent.prototype.constructor !== Function.prototype
-    )
-      metadata.options.extends = parent;
-  }
-
   if (metadata.options.extends) {
     const parentJSONSchema = createJSONSchemaForClass(metadata.options.extends);
     mergeJSONSchemas(jsonSchema, parentJSONSchema);

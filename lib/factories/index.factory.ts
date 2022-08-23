@@ -70,7 +70,7 @@ export const createIndexesForClass = (target: Type, parentKey?: string) => {
   const propertiesMetadata = getPropertiesByTarget(target);
   let indexes = generateIndexes(propertiesMetadata, parentKey);
 
-  if (metadata.options && metadata.options.extends) {
+  if (metadata.options.extends) {
     const parentIndexes = createIndexesForClass(
       metadata.options.extends,
       parentKey,
