@@ -41,17 +41,24 @@ const mergeJSONSchemas = (
 };
 
 export const createJSONSchemaForClass = (target: Type) => {
-  let existingJSONSchema = getJSONSchema(target);
+  const existingJSONSchema = getJSONSchema(target);
   if (existingJSONSchema) return existingJSONSchema;
 
   const metadata = getJSONSchemaMetadataByTarget(target);
   const jsonSchema: JSONSchemaObject = { bsonType: "object" };
-  if (!metadata) return jsonSchema;
-
   const propertiesMetadata = getPropertiesByTarget(target);
   createJSONSchemaProperties(jsonSchema, propertiesMetadata);
 
-  if (metadata.options && metadata.options.extends) {
+  if (!metadata.options.extends) {
+    const parent = Object.getPrototypeOf(target);
+    if (
+      parent.prototype !== undefined &&
+      parent.prototype.constructor !== Function.prototype
+    )
+      metadata.options.extends = parent;
+  }
+
+  if (metadata.options.extends) {
     const parentJSONSchema = createJSONSchemaForClass(metadata.options.extends);
     mergeJSONSchemas(jsonSchema, parentJSONSchema);
   }

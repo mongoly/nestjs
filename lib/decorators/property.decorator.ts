@@ -195,7 +195,7 @@ export const Prop =
     createAndAddProperty(target, propertyKey, propertyOptions);
   };
 
-export const OptionalProp =
+export const NullableProp =
   (propertyOptionsOrType?: Type | Type[] | PropertyOptions) =>
   (target: unknown, propertyKey: string) => {
     const propertyOptions = determinePropertyOptions(propertyOptionsOrType);
@@ -203,7 +203,15 @@ export const OptionalProp =
     createAndAddProperty(target, propertyKey, propertyOptions);
   };
 
-export const Raw =
+export const RequiredProp =
+  (propertyOptionsOrType?: Type | Type[] | PropertyOptions) =>
+  (target: unknown, propertyKey: string) => {
+    const propertyOptions = determinePropertyOptions(propertyOptionsOrType);
+    propertyOptions.isRequired = true;
+    createAndAddProperty(target, propertyKey, propertyOptions);
+  };
+
+export const RawProp =
   (jsonSchema: JSONSchema = {}, propertyOptions: PropertyOptions = {}) =>
   (target: unknown, propertyKey: string) => {
     addProperty(target, propertyKey, jsonSchema, propertyOptions);

@@ -17,9 +17,19 @@ export const addPropertyMetadata = (
 };
 
 export const getJSONSchemaMetadataByTarget = (target: Function) =>
-  jsonSchemaMetadata.get(target);
+  jsonSchemaMetadata.get(target) || { options: {} };
 
 export const addJSONSchemaMetadata = (
   target: Function,
   metadata: JSONSchemaMetadata,
-) => jsonSchemaMetadata.set(target, metadata);
+) => {
+  if (!metadata.options.extends) {
+    const parent = Object.getPrototypeOf(target);
+    if (
+      parent.prototype !== undefined &&
+      parent.prototype.constructor !== Function.prototype
+    )
+      metadata.options.extends = parent;
+  }
+  jsonSchemaMetadata.set(target, metadata);
+};

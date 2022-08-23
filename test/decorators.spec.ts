@@ -2,20 +2,21 @@ import "reflect-metadata";
 import { describe, it, expect } from "vitest";
 import {
   Prop,
+  NullableProp,
+  RequiredProp,
+  RawProp,
   Schema,
   createJSONSchemaForClass,
   createIndexesForClass,
-  Raw,
 } from "../lib";
 
 describe("Schemas", () => {
   it("Should create a basic schema", () => {
-    @Schema()
     class TestClass {
-      @Prop({ isRequired: true })
+      @RequiredProp()
       name: string;
 
-      @Prop({ isNullable: true })
+      @NullableProp()
       age: number;
     }
     const jsonSchema = createJSONSchemaForClass(TestClass);
@@ -33,8 +34,6 @@ describe("Schemas", () => {
       M,
       F,
     }
-
-    @Schema()
     class FriendClass {
       @Prop()
       name: string;
@@ -47,21 +46,20 @@ describe("Schemas", () => {
       },
     });
 
-    @Schema()
     class MyClass {
-      @Prop({ isRequired: true, schema: { minLength: 2 } })
+      @RequiredProp({ schema: { minLength: 2 } })
       name: string;
 
-      @Prop({ isRequired: true })
+      @RequiredProp()
       email: string;
 
-      @Prop({ isNullable: true, schema: { minimum: 16 } })
+      @NullableProp({ schema: { minimum: 16 } })
       age: number;
 
       @Prop({ enum: Gender })
       gender: Gender;
 
-      @Raw({ ...friendJSONSchema, bsonType: ["null", "object"] })
+      @NullableProp(FriendClass)
       bestFriend?: FriendClass;
 
       @Prop({
@@ -78,6 +76,9 @@ describe("Schemas", () => {
 
       @Prop([Number])
       moreNumbers: number[];
+
+      @RawProp()
+      meta: any;
     }
 
     const jsonSchema = createJSONSchemaForClass(MyClass);
@@ -107,18 +108,17 @@ describe("Schemas", () => {
           bsonType: "array",
           items: { bsonType: "number" },
         },
+        meta: {},
       },
       required: ["name", "email"],
     });
   });
   it("Should automatically create sub schemas", () => {
-    @Schema()
     class SubClass {
       @Prop()
       name: string;
     }
 
-    @Schema()
     class ParentClass {
       @Prop()
       id: string;
@@ -142,18 +142,15 @@ describe("Schemas", () => {
     });
   });
   it("Should extend schemas", () => {
-    @Schema()
     class A {
       @Prop()
       id: string;
     }
-
     @Schema()
     class B extends A {
       @Prop()
       name: string;
     }
-
     @Schema()
     class C extends B {
       @Prop()

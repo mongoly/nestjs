@@ -66,7 +66,7 @@ export const createIndexesForClass = (target: Type, parentKey?: string) => {
   const existingIndexes = getIndexes(target);
   if (existingIndexes) return existingIndexes;
 
-  const metadata = getJSONSchemaMetadataByTarget(target) || {};
+  const metadata = getJSONSchemaMetadataByTarget(target);
   const propertiesMetadata = getPropertiesByTarget(target);
   let indexes = generateIndexes(propertiesMetadata, parentKey);
 

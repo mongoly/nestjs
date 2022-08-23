@@ -27,9 +27,11 @@
     "release": "npm run test && npm run build && release-it"
   },
   "dependencies": {
-    "pluralize": "^8.0.0"
+    "pluralize": "^8.0.0",
+    "snakecase": "^1.0.0"
   },
   "devDependencies": {
+    "@mongoly/core": "*",
     "@nestjs/common": "^9.0.11",
     "@nestjs/core": "^9.0.11",
     "@nestjs/testing": "^9.0.11",
@@ -48,9 +50,9 @@
     "vitest": "^0.21.1"
   },
   "peerDependencies": {
-    "@nestjs/common": "^8.0.0 || ^9.0.0",
-    "@nestjs/core": "^8.0.0 || ^9.0.0",
-    "@mongoly/core": "^0.1.10",
+    "@mongoly/core": "*",
+    "@nestjs/common": "^9.0.0",
+    "@nestjs/core": "^9.0.0",
     "reflect-metadata": "^0.1.13",
     "rxjs": "^7.5.6"
   }
