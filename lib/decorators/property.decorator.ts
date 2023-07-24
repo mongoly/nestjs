@@ -50,7 +50,7 @@ const getArrayKeywords = (propertyOptions: PropertyOptions): ArrayKeywords => {
 };
 
 const getScalarKeywords = (
-  propertyOptions: PropertyOptions,
+  propertyOptions: PropertyOptions
 ): ScalarKeywords => {
   const scalarProps: ScalarKeywords = {};
   if (propertyOptions.schema) {
@@ -77,7 +77,7 @@ const getScalarKeywords = (
 const createJSONSchemaForProperty = (
   target: unknown,
   propertyKey: string,
-  propertyOptions: PropertyOptions,
+  propertyOptions: PropertyOptions
 ): JSONSchema => {
   if (!target || typeof target !== "object")
     throw new Error("`@Property` must be used in a class");
@@ -111,7 +111,7 @@ const createJSONSchemaForProperty = (
   if (propertyOptions.type && propertyOptions.type instanceof Array) {
     if (propertyOptions.type.length > 1)
       throw new Error(
-        `More than one type specified at "${propertyPath}", this is not yet supported.`,
+        `More than one type specified at "${propertyPath}", this is not yet supported.`
       );
     propertyOptions.type = propertyOptions.type[0];
   }
@@ -138,8 +138,10 @@ const createJSONSchemaForProperty = (
   }
 
   let bsonType = DATA_TYPE_TO_BSON_TYPE.get(propertyOptions.type);
-  if (!bsonType)
-    throw new Error(`Unable to determine type at "${propertyPath}"`);
+  if (!bsonType) {
+    console.warn(`Unable to determine type at "${propertyPath}"`);
+    return {};
+  }
   const scalarProps = getScalarKeywords(propertyOptions);
   return propertyOptions.isArray
     ? {
@@ -154,7 +156,7 @@ const createJSONSchemaForProperty = (
 };
 
 const determinePropertyOptions = (
-  propertyOptionsOrType?: Type | Type[] | PropertyOptions,
+  propertyOptionsOrType?: Type | Type[] | PropertyOptions
 ) => {
   const propertyOptions =
     propertyOptionsOrType !== undefined
@@ -170,7 +172,7 @@ const addProperty = (
   target: unknown,
   key: string,
   jsonSchema: JSONSchema,
-  options: PropertyOptions,
+  options: PropertyOptions
 ) => {
   addPropertyMetadata((target as Object).constructor, {
     jsonSchema,
@@ -182,7 +184,7 @@ const addProperty = (
 const createAndAddProperty = (
   target: unknown,
   key: string,
-  options: PropertyOptions,
+  options: PropertyOptions
 ) => {
   const jsonSchema = createJSONSchemaForProperty(target, key, options);
   addProperty(target, key, jsonSchema, options);
